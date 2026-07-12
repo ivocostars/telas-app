@@ -1,15 +1,36 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL environment variable is required");
+type Db = ReturnType<typeof drizzle>;
+type Sql = ReturnType<typeof postgres>;
+
+let _client: Sql | null = null;
+let _db: Db | null = null;
+
+function getClient(): Sql {
+  if (!_client) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("DATABASE_URL required");
+    _client = postgres(url, { max: 3, prepare: false, connection: { attempts: 1 } });
+  }
+  return _client;
 }
 
-const client = postgres(connectionString, {
-  max: 3,
-  prepare: false,
-  connection: { attempts: 1 },
+function getDb(): Db {
+  if (!_db) {
+    _db = drizzle(getClient());
+  }
+  return _db;
+}
+
+export const db = new Proxy<Db>({} as Db, {
+  get(_, prop) {
+    return (getDb() as any)[prop];
+  },
 });
-export const db = drizzle(client);
-export const sql = client;
+
+export const sql = new Proxy<Sql>({} as Sql, {
+  get(_, prop) {
+    return (getClient() as any)[prop];
+  },
+});
