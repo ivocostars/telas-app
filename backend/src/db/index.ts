@@ -10,7 +10,7 @@ function getClient() {
     if (!connectionString) {
       throw new Error("DATABASE_URL environment variable is required");
     }
-    _client = postgres(connectionString, { max: 5, connection: { timeout: 15 } });
+    _client = postgres(connectionString, { max: 5 });
   }
   return _client;
 }

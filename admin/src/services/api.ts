@@ -168,6 +168,30 @@ export function deleteAllEspectadores(): Promise<{ deleted: number }> {
   })
 }
 
+export function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: boolean }> {
+  return request('/auth/password', {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+}
+
+export function getUsuarios(): Promise<{ id: number; email: string; rol: string }[]> {
+  return request('/auth/usuarios')
+}
+
+export function createUsuario(email: string, password: string, rol: string): Promise<{ id: number; email: string; rol: string }> {
+  return request('/auth/usuarios', {
+    method: 'POST',
+    body: JSON.stringify({ email, password, rol }),
+  })
+}
+
+export function deleteUsuario(id: number): Promise<{ deleted: boolean }> {
+  return request(`/auth/usuarios/${id}`, {
+    method: 'DELETE',
+  })
+}
+
 export function sendEmail(id: number): Promise<{ sent: boolean }> {
   return request(`/espectadores/${id}/email`, {
     method: 'POST',

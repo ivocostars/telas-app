@@ -1,4 +1,4 @@
-export const API_URL = 'http://192.168.0.XXX:4000/api';
+export const API_URL = 'https://telas-app-production.up.railway.app/api';
 
 export const COLORS = {
   bg: '#0D0A1A',
