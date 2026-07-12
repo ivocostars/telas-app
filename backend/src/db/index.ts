@@ -6,6 +6,10 @@ if (!connectionString) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
-const client = postgres(connectionString, { max: 5 });
+const client = postgres(connectionString, {
+  max: 3,
+  prepare: false,
+  connection: { attempts: 1 },
+});
 export const db = drizzle(client);
 export const sql = client;
