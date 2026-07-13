@@ -27,4 +27,5 @@ export const db = new Proxy<Db>({} as Db, {
 
 export const sql = new Proxy<Sql>({} as Sql, {
   get(_, prop) { return (getClient() as any)[prop]; },
+  apply(_, thisArg, args) { return (getClient() as any)(...args); },
 });
