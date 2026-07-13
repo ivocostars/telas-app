@@ -1,13 +1,13 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 
-type Db = ReturnType<typeof drizzle>;
-type Sql = ReturnType<typeof postgres>;
+type PgClient = ReturnType<typeof postgres>;
+type PgDb = ReturnType<typeof drizzle>;
 
-let _client: Sql | null = null;
-let _db: Db | null = null;
+let _client: PgClient | null = null;
+let _db: PgDb | null = null;
 
-function getClient(): Sql {
+function ensureClient() {
   if (!_client) {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL required");
@@ -16,16 +16,19 @@ function getClient(): Sql {
   return _client;
 }
 
-function getDb(): Db {
-  if (!_db) _db = drizzle(getClient());
+function ensureDb() {
+  if (!_db) _db = drizzle(ensureClient());
   return _db;
 }
 
-export const db = new Proxy<Db>({} as Db, {
-  get(_, prop) { return (getDb() as any)[prop]; },
+export const db = new Proxy<PgDb>({} as PgDb, {
+  get(_, prop) { return (ensureDb() as any)[prop]; },
 });
 
-export const sql = new Proxy<Sql>({} as Sql, {
-  get(_, prop) { return (getClient() as any)[prop]; },
-  apply(_, thisArg, args) { return (getClient() as any)(...args); },
-});
+function _sql(strings: TemplateStringsArray, ...values: any[]) {
+  return ensureClient()(strings, ...values);
+}
+
+_sql.end = async () => { if (_client) await _client.end(); };
+
+export { _sql as sql };
