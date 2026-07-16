@@ -1,8 +1,8 @@
 import type { Espectador, EspectadorInput, EspectadoresResponse, Estadisticas, BulkImportResult } from '../types'
 
-const API_URL = '/api'
-const ENV_API = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL
-export const API_URL = ENV_API || API_URL
+const FALLBACK_URL = '/api'
+const ENV_URL = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL
+export const API_URL = ENV_URL || FALLBACK_URL
 
 function getToken(): string | null {
   return localStorage.getItem('token')
