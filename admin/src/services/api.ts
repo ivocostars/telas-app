@@ -1,6 +1,6 @@
 import type { Espectador, EspectadorInput, EspectadoresResponse, Estadisticas, BulkImportResult } from '../types'
 
-const API_BASE = '/api'
+const API_BASE = typeof import.meta.env.VITE_API_URL === 'string' && import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL : '/api'
 
 function getToken(): string | null {
   return localStorage.getItem('token')
