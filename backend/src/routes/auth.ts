@@ -161,4 +161,51 @@ router.delete("/usuarios/:id", authenticate, requireAdmin, async (req: Request, 
   }
 });
 
+// POST /api/auth/recover - recuperar contraseña con código maestro
+router.post("/recover", async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      recoveryCode: z.string().min(1, "Código requerido"),
+      newPassword: z.string().min(6, "Mínimo 6 caracteres"),
+      email: z.string().email("Email inválido"),
+    });
+    const body = schema.parse(req.body);
+
+    const masterCode = process.env.RECOVERY_CODE;
+    if (!masterCode) {
+      res.status(500).json({ error: "Código de recuperación no configurado en el servidor" });
+      return;
+    }
+
+    if (body.recoveryCode !== masterCode) {
+      res.status(401).json({ error: "Código de recuperación inválido" });
+      return;
+    }
+
+    const user = await db
+      .select()
+      .from(usuarios)
+      .where(eq(usuarios.email, body.email))
+      .limit(1)
+      .then((r) => r[0]);
+
+    if (!user) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return;
+    }
+
+    const hash = await bcrypt.hash(body.newPassword, 10);
+    await db.update(usuarios).set({ passwordHash: hash }).where(eq(usuarios.id, user.id));
+
+    res.json({ ok: true });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    console.error("Recovery error:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 export default router;
