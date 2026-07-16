@@ -1,6 +1,8 @@
 import type { Espectador, EspectadorInput, EspectadoresResponse, Estadisticas, BulkImportResult } from '../types'
 
-const API_BASE = typeof import.meta.env.VITE_API_URL === 'string' && import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL : '/api'
+const API_URL = '/api'
+const ENV_API = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL
+export const API_URL = ENV_API || API_URL
 
 function getToken(): string | null {
   return localStorage.getItem('token')
@@ -25,7 +27,7 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     headers['Content-Type'] = 'application/json'
   }
 
-  const res = await fetch(`${API_BASE}${url}`, {
+  const res = await fetch(`${API_URL}${url}`, {
     ...options,
     headers,
   })
@@ -104,7 +106,7 @@ export function bulkImport(file: File): Promise<BulkImportResult> {
   const formData = new FormData()
   formData.append('file', file)
 
-  return fetch(`${API_BASE}/espectadores/bulk`, {
+  return fetch(`${API_URL}/espectadores/bulk`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -142,13 +144,13 @@ export function validateQr(qrHash: string, scannerNombre: string): Promise<{ val
 }
 
 export function getQrImageUrl(id: number): string {
-  return `${API_BASE}/espectadores/${id}/qr`
+  return `${API_URL}/espectadores/${id}/qr`
 }
 
 export function downloadPlantilla(): void {
   const token = getToken()
   if (!token) return
-  fetch(`${API_BASE}/espectadores/plantilla`, {
+  fetch(`${API_URL}/espectadores/plantilla`, {
     headers: { Authorization: `Bearer ${token}` },
   })
     .then((res) => res.blob())
