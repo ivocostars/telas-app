@@ -4,4 +4,5 @@ export type RootStackParamList = {
   Scanner: undefined;
   Dashboard: undefined;
   Vender: undefined;
+  Buscar: undefined;
 };

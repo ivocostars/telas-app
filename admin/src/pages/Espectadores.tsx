@@ -158,7 +158,8 @@ export default function Espectadores() {
     setShowQr(e)
     setQrDataUrl('')
     try {
-      const url = await QRCode.toDataURL(e.qrHash)
+      const qrData = [e.qrHash, e.nombre, e.apellido, e.dni, e.alumnaInvitada || ''].join('|')
+      const url = await QRCode.toDataURL(qrData)
       setQrDataUrl(url)
     } catch {
       addToast('Error al generar QR', 'error')

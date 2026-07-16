@@ -40,6 +40,12 @@ const CARDS = [
     description: 'Validar ingreso de espectadores',
   },
   {
+    key: 'buscar',
+    icon: '🔍',
+    title: 'Consultar',
+    description: 'Buscar si un espectador ya ingresó',
+  },
+  {
     key: 'dashboard',
     icon: '📊',
     title: 'Dashboard',
@@ -157,6 +163,9 @@ export default function HomeScreen({ navigation }: Props) {
     switch (key) {
       case 'scanner':
         navigation.navigate('Scanner');
+        break;
+      case 'buscar':
+        navigation.navigate('Buscar');
         break;
       case 'dashboard':
         navigation.navigate('Dashboard');

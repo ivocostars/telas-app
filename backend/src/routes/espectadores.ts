@@ -391,7 +391,15 @@ router.get("/:id/qr", authenticate, async (req: Request, res: Response) => {
       return;
     }
 
-    const qrBuffer = await QRCode.toBuffer(spectator.qrHash, {
+    const qrData = [
+      spectator.qrHash,
+      spectator.nombre,
+      spectator.apellido,
+      spectator.dni,
+      spectator.alumnaInvitada || "",
+    ].join("|");
+
+    const qrBuffer = await QRCode.toBuffer(qrData, {
       type: "png",
       width: 400,
       margin: 2,

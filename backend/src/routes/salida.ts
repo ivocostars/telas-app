@@ -15,11 +15,12 @@ const salidaSchema = z.object({
 router.post("/", authenticate, async (req: Request, res: Response) => {
   try {
     const body = salidaSchema.parse(req.body);
+    const qrHash = body.qr_hash.split("|")[0];
 
     const spectator = await db
       .select()
       .from(espectadores)
-      .where(eq(espectadores.qrHash, body.qr_hash))
+      .where(eq(espectadores.qrHash, qrHash))
       .limit(1)
       .then((r) => r[0]);
 

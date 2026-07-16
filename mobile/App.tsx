@@ -12,6 +12,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import VenderScreen from './src/screens/VenderScreen';
+import BuscarScreen from './src/screens/BuscarScreen';
 import { RootStackParamList } from './src/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -79,6 +80,7 @@ export default function App() {
             />
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="Vender" component={VenderScreen} />
+            <Stack.Screen name="Buscar" component={BuscarScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

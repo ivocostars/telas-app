@@ -115,41 +115,46 @@ export default function ScannerScreen({ navigation }: Props) {
     await processScan(result.data);
   }
 
-  async function processScan(qrHash: string) {
+  async function processScan(raw: string) {
     if (!scannerName) return;
     setScanned(true);
-    setLastQrHash(qrHash);
+    setLastQrHash(raw);
+
+    // Parse QR data (format: hash|nombre|apellido|dni|alumna)
+    const parts = raw.split('|');
+    const qrHash = parts[0];
+    const qrData: ValidarQrResponse['espectador'] = parts.length >= 4 ? {
+      nombre: parts[1] || '',
+      apellido: parts[2] || '',
+      dni: parts[3] || '',
+      silla: false,
+      alumnaInvitada: parts[4] || null,
+    } : undefined;
+
     try {
-      const res = await validarQr(qrHash, scannerName);
+      const res = await validarQr(raw, scannerName);
       if (res.valido) {
         showResult('valid', res.espectador);
         setScanHistory((prev) => [
-          {
-            nombre: res.espectador?.nombre || '',
-            apellido: res.espectador?.apellido || '',
-            dni: res.espectador?.dni || '',
-            valido: true,
-            timestamp: dayjs().format('HH:mm:ss'),
-          } as ScanHistoryItem,
+          { nombre: res.espectador?.nombre || '', apellido: res.espectador?.apellido || '', dni: res.espectador?.dni || '', valido: true, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
           ...prev.slice(0, 2),
         ]);
       } else if (res.motivo === 'QR ya utilizado') {
         showResult('rejected', res.espectador, res.primer_ingreso);
         setScanHistory((prev) => [
-          {
-            nombre: res.espectador?.nombre || '',
-            apellido: res.espectador?.apellido || '',
-            dni: res.espectador?.dni || '',
-            valido: false,
-            timestamp: dayjs().format('HH:mm:ss'),
-          } as ScanHistoryItem,
+          { nombre: res.espectador?.nombre || '', apellido: res.espectador?.apellido || '', dni: res.espectador?.dni || '', valido: false, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
           ...prev.slice(0, 2),
         ]);
       } else {
-        showResult('invalid');
+        showResult('invalid', qrData);
       }
     } catch {
-      showResult('invalid');
+      // Backend offline - show data from QR if available
+      if (qrData) {
+        showResult('valid', qrData);
+      } else {
+        showResult('invalid');
+      }
     }
   }
 
