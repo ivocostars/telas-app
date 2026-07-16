@@ -58,7 +58,7 @@ router.put("/password", authenticate, async (req: Request, res: Response) => {
   try {
     const schema = z.object({
       currentPassword: z.string().min(1),
-      newPassword: z.string().min(6, "Mínimo 6 caracteres"),
+      newPassword: z.string().min(8, "Mínimo 8 caracteres").regex(/[!@#$%^&*(),.?":{}|<>]/, "Debe contener al menos un carácter especial"),
     });
     const body = schema.parse(req.body);
 
@@ -114,7 +114,7 @@ router.post("/usuarios", authenticate, requireAdmin, async (req: Request, res: R
   try {
     const schema = z.object({
       email: z.string().email("Email inválido"),
-      password: z.string().min(6, "Mínimo 6 caracteres"),
+      password: z.string().min(8, "Mínimo 8 caracteres").regex(/[!@#$%^&*(),.?":{}|<>]/, "Debe contener al menos un carácter especial"),
       rol: z.enum(["admin", "scanner"]),
     });
     const body = schema.parse(req.body);
@@ -166,7 +166,7 @@ router.post("/recover", async (req: Request, res: Response) => {
   try {
     const schema = z.object({
       recoveryCode: z.string().min(1, "Código requerido"),
-      newPassword: z.string().min(6, "Mínimo 6 caracteres"),
+      newPassword: z.string().min(8, "Mínimo 8 caracteres").regex(/[!@#$%^&*(),.?":{}|<>]/, "Debe contener al menos un carácter especial"),
       email: z.string().email("Email inválido"),
     });
     const body = schema.parse(req.body);

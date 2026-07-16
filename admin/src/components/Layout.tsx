@@ -4,6 +4,12 @@ import { Modal } from './Modal'
 import { useToast } from './Toast'
 import { changePassword, getUsuarios, createUsuario, deleteUsuario } from '../services/api'
 
+function validatePass(pw: string): string | null {
+  if (pw.length < 8) return 'Mínimo 8 caracteres'
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(pw)) return 'Debe tener al menos 1 carácter especial (!@#$%...)'
+  return null
+}
+
 export function Layout() {
   const navigate = useNavigate()
   const { addToast } = useToast()
@@ -28,7 +34,8 @@ export function Layout() {
 
   const handleChangePassword = async () => {
     if (!currentPw || !newPw) return
-    if (newPw.length < 6) { addToast('Mínimo 6 caracteres', 'error'); return }
+    const err = validatePass(newPw)
+    if (err) { addToast(err, 'error'); return }
     setSavingPw(true)
     try {
       await changePassword(currentPw, newPw)
@@ -127,7 +134,12 @@ export function Layout() {
           </div>
           <div className="form-group">
             <label className="form-label">Nueva contraseña</label>
-            <input type="password" className="form-input" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Mínimo 6 caracteres" />
+            <input type="password" className="form-input" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Mínimo 8 caracteres + 1 especial" />
+            {newPw.length > 0 && (
+              <span style={{ fontSize: '0.75rem', color: validatePass(newPw) ? 'var(--color-error)' : 'var(--color-success)', marginTop: 2 }}>
+                {validatePass(newPw) || '✅'}
+              </span>
+            )}
           </div>
           <div className="form-actions">
             <button className="btn btn-outline" onClick={() => setShowPassword(false)}>Cancelar</button>

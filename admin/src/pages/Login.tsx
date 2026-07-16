@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { login } from '../services/api'
 import { Modal } from '../components/Modal'
 
+function validatePass(pw: string): string | null {
+  if (pw.length < 8) return 'Mínimo 8 caracteres'
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(pw)) return 'Debe tener 1 carácter especial (!@#$%...)'
+  return null
+}
+
 export default function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -34,7 +40,8 @@ export default function Login() {
 
   const handleRecover = async () => {
     if (!recoverEmail || !recoverCode || !newPass) return
-    if (newPass.length < 6) { setRecoverMsg('Mínimo 6 caracteres'); return }
+    const pwErr = validatePass(newPass)
+    if (pwErr) { setRecoverMsg(pwErr); return }
     setRecovering(true)
     setRecoverMsg('')
     try {
@@ -97,7 +104,10 @@ export default function Login() {
           </div>
           <div className="form-group">
             <label className="form-label">Nueva contraseña</label>
-            <input type="password" className="form-input" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Mínimo 6 caracteres" />
+            <input type="password" className="form-input" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Mínimo 8 + 1 especial" />
+            {newPass.length > 0 && (
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 2 }}>{validatePass(newPass) || '✅'}</span>
+            )}
           </div>
           {recoverMsg && <p className="form-error" style={{ color: recoverMsg.includes('✅') ? 'var(--color-success)' : 'var(--color-error)' }}>{recoverMsg}</p>}
           <div className="form-actions">
