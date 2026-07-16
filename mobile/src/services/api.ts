@@ -152,6 +152,25 @@ export function validarQr(
   });
 }
 
+export interface SalidaResponse {
+  valido: boolean;
+  motivo?: string;
+  espectador?: EspectadorData;
+}
+
+export function marcarSalida(
+  qrHash: string,
+  scannerNombre: string
+): Promise<SalidaResponse> {
+  return apiFetch<SalidaResponse>('/salida', {
+    method: 'POST',
+    body: JSON.stringify({
+      qr_hash: qrHash,
+      scanner_nombre: scannerNombre,
+    }),
+  });
+}
+
 export interface SendEmailResponse {
   sent: boolean;
 }

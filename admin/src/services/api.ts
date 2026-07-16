@@ -199,3 +199,10 @@ export function sendEmail(id: number): Promise<{ sent: boolean }> {
     method: 'POST',
   })
 }
+
+export function marcarSalida(id: number): Promise<{ valido: boolean; motivo?: string }> {
+  return request(`/espectadores/${id}/salida`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}

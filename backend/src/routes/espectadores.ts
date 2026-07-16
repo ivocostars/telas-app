@@ -452,6 +452,50 @@ router.post("/:id/email", authenticate, requireAdmin, async (req: Request, res: 
   }
 });
 
+// POST /api/espectadores/:id/salida
+router.post("/:id/salida", authenticate, async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "ID inválido" });
+      return;
+    }
+
+    const spectator = await db
+      .select()
+      .from(espectadores)
+      .where(eq(espectadores.id, id))
+      .limit(1)
+      .then((r) => r[0]);
+
+    if (!spectator) {
+      res.status(404).json({ error: "Espectador no encontrado" });
+      return;
+    }
+
+    if (!spectator.ingresado) {
+      res.json({ valido: false, motivo: "El espectador no está adentro" });
+      return;
+    }
+
+    await db
+      .update(espectadores)
+      .set({ ingresado: false, ingresadoEn: null })
+      .where(eq(espectadores.id, id));
+
+    await db.insert(escaneos).values({
+      espectadorId: id,
+      scannerNombre: req.user?.email || "admin",
+      resultado: "salida",
+    });
+
+    res.json({ valido: true });
+  } catch (err) {
+    console.error("Error marking exit:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 function isUniqueViolation(err: any): boolean {
   return err?.code === "23505" || err?.constraint?.includes?.("unique");
 }

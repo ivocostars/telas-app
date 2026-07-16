@@ -6,6 +6,7 @@ import helmet from "helmet";
 import authRouter from "./routes/auth.js";
 import espectadoresRouter from "./routes/espectadores.js";
 import validarRouter from "./routes/validar.js";
+import salidaRouter from "./routes/salida.js";
 import estadisticasRouter from "./routes/estadisticas.js";
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/espectadores", espectadoresRouter);
 app.use("/api/validar", validarRouter);
+app.use("/api/salida", salidaRouter);
 app.use("/api/estadisticas", estadisticasRouter);
 
 app.get("/api/health", (_req, res) => {

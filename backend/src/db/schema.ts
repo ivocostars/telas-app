@@ -43,7 +43,7 @@ export const escaneos = pgTable("escaneos", {
   scannerNombre: varchar("scanner_nombre", { length: 100 }).notNull(),
   resultado: varchar("resultado", { length: 10 })
     .notNull()
-    .$type<"ok" | "rechazado">(),
+    .$type<"ok" | "rechazado" | "salida">(),
   creadoEn: timestamp("creado_en", { withTimezone: true })
     .notNull()
     .defaultNow(),

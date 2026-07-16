@@ -10,6 +10,7 @@ import {
   FlatList,
   StatusBar,
   Platform,
+  Alert,
 } from 'react-native';
 import {
   CameraView,
@@ -19,7 +20,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../config';
-import { validarQr, ValidarQrResponse } from '../services/api';
+import { validarQr, marcarSalida, ValidarQrResponse } from '../services/api';
 import { useAppStore } from '../store';
 import dayjs from 'dayjs';
 import { RootStackParamList } from '../types';
@@ -49,6 +50,7 @@ export default function ScannerScreen({ navigation }: Props) {
   const [resultType, setResultType] = useState<ResultType>(null);
   const [resultData, setResultData] = useState<ValidarQrResponse['espectador'] | null>(null);
   const [primerIngreso, setPrimerIngreso] = useState<ValidarQrResponse['primer_ingreso'] | null>(null);
+  const [lastQrHash, setLastQrHash] = useState<string | null>(null);
   const [torch, setTorch] = useState(false);
   const [manualModal, setManualModal] = useState(false);
   const [manualInput, setManualInput] = useState('');
@@ -116,6 +118,7 @@ export default function ScannerScreen({ navigation }: Props) {
   async function processScan(qrHash: string) {
     if (!scannerName) return;
     setScanned(true);
+    setLastQrHash(qrHash);
     try {
       const res = await validarQr(qrHash, scannerName);
       if (res.valido) {
@@ -147,6 +150,21 @@ export default function ScannerScreen({ navigation }: Props) {
       }
     } catch {
       showResult('invalid');
+    }
+  }
+
+  async function handleSalida() {
+    if (!scannerName || !lastQrHash) return;
+    try {
+      const res = await marcarSalida(lastQrHash, scannerName);
+      if (res.valido) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        hideResult();
+      } else {
+        Alert.alert('Error', res.motivo || 'No se pudo marcar salida');
+      }
+    } catch {
+      Alert.alert('Error', 'No se pudo marcar salida');
     }
   }
 
@@ -294,6 +312,9 @@ export default function ScannerScreen({ navigation }: Props) {
                       <Text style={styles.resultScanner}>
                         Escaneó: {primerIngreso.scanner}
                       </Text>
+                      <TouchableOpacity style={styles.salidaButton} onPress={handleSalida}>
+                        <Text style={styles.salidaButtonText}>🚪 Marcar salida</Text>
+                      </TouchableOpacity>
                     </>
                   )}
                 </>
@@ -585,6 +606,21 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: COLORS.text,
     fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  salidaButton: {
+    marginTop: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.primaryLight,
+  },
+  salidaButtonText: {
+    color: COLORS.primaryLight,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.5,
   },

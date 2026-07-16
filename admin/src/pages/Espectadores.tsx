@@ -11,6 +11,7 @@ import {
   updateEspectador,
   deleteEspectador,
   deleteAllEspectadores,
+  marcarSalida,
   bulkImport,
   getQrImageUrl,
   downloadPlantilla,
@@ -136,6 +137,20 @@ export default function Espectadores() {
       fetchData()
     } catch (err) {
       addToast(err instanceof Error ? err.message : 'Error al eliminar', 'error')
+    }
+  }
+
+  const handleMarcarSalida = async (id: number) => {
+    try {
+      const res = await marcarSalida(id)
+      if (res.valido) {
+        addToast('Salida marcada correctamente', 'success')
+        fetchData()
+      } else {
+        addToast(res.motivo || 'Error', 'error')
+      }
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Error', 'error')
     }
   }
 
@@ -322,6 +337,7 @@ export default function Espectadores() {
                     <td>
                       <div className="action-btns">
                         <button className="btn btn-sm btn-outline" onClick={() => openEdit(esp)} title="Editar">✏️</button>
+                        {esp.ingresado && <button className="btn btn-sm btn-outline" onClick={() => handleMarcarSalida(esp.id)} title="Marcar salida">🚪</button>}
                         <button className="btn btn-sm btn-danger" onClick={() => setDeleteTarget(esp)} title="Eliminar">🗑️</button>
                       </div>
                     </td>
@@ -404,6 +420,7 @@ export default function Espectadores() {
               <button className="btn btn-primary" onClick={downloadQr}>Descargar QR</button>
               {showQr.email && <button className="btn btn-outline" onClick={handleSendEmail}>Enviar por Email</button>}
               {showQr.telefono && <button className="btn btn-outline" onClick={shareWhatsApp}>Compartir WhatsApp</button>}
+              {showQr.ingresado && <button className="btn btn-outline" onClick={() => { handleMarcarSalida(showQr.id); setShowQr(null) }}>🚪 Marcar salida</button>}
             </div>
           </div>
         )}
