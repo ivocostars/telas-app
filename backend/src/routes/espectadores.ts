@@ -446,6 +446,8 @@ router.post("/:id/email", authenticate, requireAdmin, async (req: Request, res: 
       "Tu código QR para Acrobacia en Telas",
       qrBuffer,
       spectator.nombreCompleto,
+      spectator.alumnaInvitada,
+      spectator.silla,
     );
 
     res.json({ sent: true });

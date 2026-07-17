@@ -21,6 +21,8 @@ export async function sendQrEmail(
   subject: string,
   qrBuffer: Buffer,
   spectatorName: string,
+  alumnaInvitada: string | null,
+  silla: boolean,
 ) {
   const config = getSmtpConfig();
   const transporter = nodemailer.createTransport({
@@ -33,6 +35,14 @@ export async function sendQrEmail(
     },
   });
 
+  const alumnaHtml = alumnaInvitada
+    ? `<p><strong>Va a ver a:</strong> ${alumnaInvitada}</p>`
+    : "";
+
+  const sillaHtml = silla
+    ? `<p><strong>Silla reservada:</strong> Sí</p>`
+    : "";
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -43,6 +53,8 @@ export async function sendQrEmail(
     .container { max-width: 600px; margin: 0 auto; padding: 24px; }
     h1 { color: #1a1a2e; font-size: 24px; }
     p { color: #555; line-height: 1.6; }
+    .detail { background: #f0f0f5; padding: 12px 16px; border-radius: 8px; margin: 16px 0; }
+    .detail p { margin: 4px 0; }
     .qr-wrapper { text-align: center; margin: 24px 0; }
     .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 12px; color: #999; }
   </style>
@@ -51,6 +63,10 @@ export async function sendQrEmail(
   <div class="container">
     <h1>¡Hola ${spectatorName}!</h1>
     <p>Gracias por tu compra. Presentá este código QR en la entrada del evento <strong>Acrobacia en Telas</strong> para acceder.</p>
+    <div class="detail">
+      ${alumnaHtml}
+      ${sillaHtml}
+    </div>
     <div class="qr-wrapper">
       <img src="cid:qr" alt="QR de ingreso" style="width: 300px; height: 300px;" />
     </div>
