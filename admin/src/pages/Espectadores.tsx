@@ -293,10 +293,6 @@ export default function Espectadores() {
             a.href = url; a.download = 'telas-app.apk'; a.click()
             URL.revokeObjectURL(url)
           }}>📲 APK</button>
-          <button className="btn btn-outline" onClick={() => {
-            const token = localStorage.getItem('token')
-            if (token) window.open(`/api/apk/descargar?token=${token}`, '_blank')
-          }}>📲 APK</button>
           <button
             className={`btn ${autoRefresh ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setAutoRefresh(!autoRefresh)}
