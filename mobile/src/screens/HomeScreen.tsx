@@ -66,17 +66,12 @@ export default function HomeScreen({ navigation }: Props) {
 
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const [nameInput, setNameInput] = useState('');
-  const [serverModalVisible, setServerModalVisible] = useState(false);
-  const [serverInput, setServerInput] = useState('');
-  const [serverUrl, setServerUrlState] = useState('');
-  const [testing, setTesting] = useState(false);
 
   const fadeValues = useRef(CARDS.map(() => new Animated.Value(0))).current;
   const waveAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     checkScannerName();
-    loadServerUrl();
     startWaveAnimation();
 
     Animated.stagger(
@@ -117,46 +112,11 @@ export default function HomeScreen({ navigation }: Props) {
     }
   }
 
-  async function loadServerUrl() {
-    const url = await getServerUrl();
-    if (url) setServerUrlState(url);
-  }
-
   async function handleSaveName() {
     if (!nameInput.trim()) return;
     await saveScannerName(nameInput.trim());
     setScannerName(nameInput.trim());
     setNameModalVisible(false);
-  }
-
-  function openServerModal() {
-    setServerInput(serverUrl);
-    setServerModalVisible(true);
-  }
-
-  async function handleTestConnection() {
-    const url = serverInput.trim().replace(/\/+$/, '');
-    if (!url) {
-      Alert.alert('Error', 'Ingresá la URL del servidor');
-      return;
-    }
-    setTesting(true);
-    try {
-      const res = await fetch(`${url}/health`);
-      const data = await res.json();
-      if (data.status === 'ok') {
-        await saveServerUrl(url);
-        setServerUrlState(url);
-        Alert.alert('Conexión exitosa', `Servidor: ${url}\nTimezone: ${data.tz || 'N/A'}`);
-        setServerModalVisible(false);
-      } else {
-        Alert.alert('Error', 'Respuesta inesperada del servidor');
-      }
-    } catch {
-      Alert.alert('Error', 'No se pudo conectar al servidor.\nVerificá la URL y que el servidor esté corriendo.');
-    } finally {
-      setTesting(false);
-    }
   }
 
   function handleCardPress(key: string) {
@@ -200,9 +160,6 @@ export default function HomeScreen({ navigation }: Props) {
             },
           ]}
         />
-        <TouchableOpacity style={styles.settingsButton} onPress={openServerModal}>
-          <Text style={styles.settingsIcon}>⚙️</Text>
-        </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.appName}>Telas Scanner</Text>
           <Text style={styles.headerSub}>Control de Ingresos</Text>
@@ -240,15 +197,6 @@ export default function HomeScreen({ navigation }: Props) {
             Scanner: <Text style={styles.footerHighlight}>{scannerName}</Text>
           </Text>
         ) : null}
-        {serverUrl ? (
-          <Text style={styles.footerUrl} numberOfLines={1}>
-            Servidor: {serverUrl}
-          </Text>
-        ) : (
-          <TouchableOpacity onPress={openServerModal}>
-            <Text style={styles.footerUrl}>⚙️ Configurar servidor</Text>
-          </TouchableOpacity>
-        )}
         <TouchableOpacity onPress={handleLogout}>
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
@@ -288,49 +236,6 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
         </View>
       </Modal>
-
-      <Modal
-        visible={serverModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setServerModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Configurar Servidor</Text>
-            <Text style={styles.modalSubtitle}>
-              Ingresá la URL del backend (ej: http://192.168.1.100:4000/api)
-            </Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="http://192.168.1.100:4000/api"
-              placeholderTextColor={COLORS.textMuted}
-              value={serverInput}
-              onChangeText={setServerInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-            />
-            <TouchableOpacity
-              style={[styles.modalButton, testing && styles.modalButtonDisabled]}
-              onPress={handleTestConnection}
-              disabled={testing}
-            >
-              {testing ? (
-                <ActivityIndicator color={COLORS.text} />
-              ) : (
-                <Text style={styles.modalButtonText}>Probar Conexión</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalCancelButton}
-              onPress={() => setServerModalVisible(false)}
-            >
-              <Text style={styles.modalCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -360,21 +265,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
     borderWidth: 2,
     opacity: 0.3,
-  },
-  settingsButton: {
-    position: 'absolute',
-    top: 50,
-    right: 16,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  settingsIcon: {
-    fontSize: 20,
   },
   headerContent: {
     alignItems: 'center',
@@ -448,12 +338,6 @@ const styles = StyleSheet.create({
   footerHighlight: {
     color: COLORS.primaryLight,
     fontWeight: '600',
-  },
-  footerUrl: {
-    fontSize: 11,
-    color: COLORS.textMuted,
-    opacity: 0.6,
-    maxWidth: '80%',
   },
   logoutText: {
     fontSize: 13,
