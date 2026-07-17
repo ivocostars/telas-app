@@ -40,6 +40,12 @@ const CARDS = [
     description: 'Validar ingreso de espectadores',
   },
   {
+    key: 'listar',
+    icon: '📋',
+    title: 'Lista',
+    description: 'Ver todos los espectadores y reenviar QR',
+  },
+  {
     key: 'buscar',
     icon: '🔍',
     title: 'Consultar',
@@ -124,6 +130,9 @@ export default function HomeScreen({ navigation }: Props) {
       case 'scanner':
         navigation.navigate('Scanner');
         break;
+      case 'listar':
+        navigation.navigate('Listar');
+        break;
       case 'buscar':
         navigation.navigate('Buscar');
         break;
@@ -176,6 +185,7 @@ export default function HomeScreen({ navigation }: Props) {
               style={[
                 styles.card,
                 card.key === 'dashboard' && styles.cardDashboard,
+                card.key === 'listar' && styles.cardListar,
                 card.key === 'vender' && styles.cardVender,
               ]}
               onPress={() => handleCardPress(card.key)}
@@ -290,7 +300,7 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     flex: 1,
-    maxHeight: 130,
+    maxHeight: 100,
   },
   card: {
     flex: 1,
@@ -304,6 +314,9 @@ const styles = StyleSheet.create({
   },
   cardDashboard: {
     borderColor: COLORS.accent,
+  },
+  cardListar: {
+    borderColor: '#10B981',
   },
   cardVender: {
     borderColor: COLORS.primaryLight,

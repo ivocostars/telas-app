@@ -157,6 +157,37 @@ export function marcarSalida(
   });
 }
 
+export interface EspectadorListado {
+  id: number;
+  nombreCompleto: string;
+  email: string | null;
+  telefono: string | null;
+  silla: boolean;
+  alumnaInvitada: string | null;
+  ingresado: boolean;
+  qrHash: string;
+}
+
+export interface EspectadoresResponse {
+  data: EspectadorListado[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export function getEspectadores(params: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<EspectadoresResponse> {
+  const query = new URLSearchParams();
+  if (params.search) query.set('search', params.search);
+  if (params.page) query.set('page', String(params.page));
+  if (params.limit) query.set('limit', String(params.limit));
+  return apiFetch<EspectadoresResponse>(`/espectadores?${query}`);
+}
+
 export interface SendEmailResponse {
   sent: boolean;
 }

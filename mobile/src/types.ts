@@ -5,4 +5,5 @@ export type RootStackParamList = {
   Dashboard: undefined;
   Vender: undefined;
   Buscar: undefined;
+  Listar: undefined;
 };
