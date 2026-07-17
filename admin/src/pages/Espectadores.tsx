@@ -378,8 +378,6 @@ export default function Espectadores() {
               <label className="form-label" htmlFor="nombreCompleto">Nombre completo *</label>
               <input id="nombreCompleto" className="form-input" required value={formData.nombreCompleto} onChange={(e) => setFormData({ ...formData, nombreCompleto: e.target.value })} />
             </div>
-          </div>
-          <div className="form-row">
             <div className="form-group">
               <label className="form-label" htmlFor="email">Email</label>
               <input id="email" type="email" className="form-input" value={formData.email || ''} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
@@ -395,8 +393,9 @@ export default function Espectadores() {
                 <input type="checkbox" checked={formData.silla || false} onChange={(e) => setFormData({ ...formData, silla: e.target.checked })} />
                 Silla reservada
               </label>
-              <label className="form-label-checkbox">
-                <input type="text" className="form-input" placeholder="Alumna invitada" value={formData.alumnaInvitada || ''} onChange={(e) => setFormData({ ...formData, alumnaInvitada: e.target.value })} />
+              <label className="form-label">
+                Alumna invitada
+                <input type="text" className="form-input" placeholder="Ej: Morena González" value={formData.alumnaInvitada || ''} onChange={(e) => setFormData({ ...formData, alumnaInvitada: e.target.value })} />
               </label>
             </div>
           </div>
