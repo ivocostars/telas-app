@@ -65,9 +65,14 @@ export default function Espectadores() {
     }
   }, [search, page, limit, addToast])
 
+  const [autoRefresh, setAutoRefresh] = useState(true)
+
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+    if (!autoRefresh) return
+    const interval = setInterval(fetchData, 15000)
+    return () => clearInterval(interval)
+  }, [fetchData, autoRefresh])
 
   const handleSearch = (value: string) => {
     setSearch(value)
@@ -276,6 +281,13 @@ export default function Espectadores() {
           <button className="btn btn-primary" onClick={openNew}>+ Nuevo</button>
           <button className="btn btn-outline" onClick={() => { setImportResult(null); setShowImport(true) }}>Importar Excel</button>
           <button className="btn btn-outline" onClick={exportPdf}>📄 PDF</button>
+          <button
+            className={`btn ${autoRefresh ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            title={autoRefresh ? 'Live refresh ON' : 'Live refresh OFF'}
+          >
+            {autoRefresh ? '🔴 EN VIVO' : '⏸ PAUSADO'}
+          </button>
           <button className="btn btn-danger" onClick={() => setShowDeleteAll(true)}>🗑 Eliminar Todos</button>
         </div>
       </div>

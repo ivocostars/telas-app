@@ -10,12 +10,14 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Estadisticas | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [lastUpdate, setLastUpdate] = useState<string>('')
 
   const fetchStats = async () => {
     try {
       const data = await getEstadisticas()
       setStats(data)
       setError('')
+      setLastUpdate(dayjs().format('HH:mm:ss'))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar estadísticas')
     } finally {
@@ -25,7 +27,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchStats()
-    const interval = setInterval(fetchStats, 30000)
+    const interval = setInterval(fetchStats, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -59,6 +61,9 @@ export default function Dashboard() {
       <div className="page-header">
         <h2 className="page-title">Dashboard</h2>
         <p className="page-date">{capitalize(now)}</p>
+        <p className="page-date" style={{ fontSize: '0.8rem', color: 'var(--color-success)' }}>
+          🔴 EN VIVO · Actualizado {lastUpdate || '...'}
+        </p>
       </div>
 
       <div className="stats-grid">
@@ -92,9 +97,35 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="card">
-        <h3 className="card-title">Sillas reservadas</h3>
-        <p className="empty-text">{stats?.sillas_otorgadas ?? 0} personas tienen silla reservada</p>
+      <div className="stats-grid">
+        <div className="stat-card" style={{ borderLeftColor: 'var(--color-primary)' }}>
+          <div className="stat-icon">💺</div>
+          <div className="stat-info">
+            <span className="stat-value">{stats?.sillas_otorgadas ?? 0}</span>
+            <span className="stat-label">Sillas Totales</span>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: 'var(--color-accent, #D4A847)' }}>
+          <div className="stat-icon">💺</div>
+          <div className="stat-info">
+            <span className="stat-value">{stats?.sillas_ocupadas ?? 0}</span>
+            <span className="stat-label">Sillas Ocupadas</span>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: 'var(--color-text-light)' }}>
+          <div className="stat-icon">💺</div>
+          <div className="stat-info">
+            <span className="stat-value">{stats?.sillas_restantes ?? 0}</span>
+            <span className="stat-label">Sillas Restantes</span>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: '#F59E0B' }}>
+          <div className="stat-icon">🎟️</div>
+          <div className="stat-info">
+            <span className="stat-value">{stats?.vendidos_en_puerta ?? 0}</span>
+            <span className="stat-label">Vendidas en Puerta</span>
+          </div>
+        </div>
       </div>
 
       <div className="card">

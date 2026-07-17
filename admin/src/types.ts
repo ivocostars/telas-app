@@ -39,6 +39,9 @@ export interface Estadisticas {
   total: number
   ingresados: number
   sillas_otorgadas: number
+  sillas_ocupadas: number
+  sillas_restantes: number
+  vendidos_en_puerta: number
   faltantes: number
   ocupacion_pct: number
   ultimos_ingresos: UltimoIngreso[]
