@@ -283,6 +283,20 @@ export default function Espectadores() {
           <button className="btn btn-primary" onClick={openNew}>+ Nuevo</button>
           <button className="btn btn-outline" onClick={() => { setImportResult(null); setShowImport(true) }}>Importar Excel</button>
           <button className="btn btn-outline" onClick={exportPdf}>📄 PDF</button>
+          <button className="btn btn-outline" onClick={async () => {
+            const token = localStorage.getItem('token')
+            if (!token) return
+            const res = await fetch('/api/apk/descargar', { headers: { Authorization: `Bearer ${token}` } })
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url; a.download = 'telas-app.apk'; a.click()
+            URL.revokeObjectURL(url)
+          }}>📲 APK</button>
+          <button className="btn btn-outline" onClick={() => {
+            const token = localStorage.getItem('token')
+            if (token) window.open(`/api/apk/descargar?token=${token}`, '_blank')
+          }}>📲 APK</button>
           <button
             className={`btn ${autoRefresh ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setAutoRefresh(!autoRefresh)}
