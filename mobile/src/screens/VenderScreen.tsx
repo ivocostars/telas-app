@@ -20,7 +20,7 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../config';
-import { createEspectador } from '../services/api';
+import { createEspectador, sendEmail } from '../services/api';
 import { RootStackParamList } from '../types';
 
 type VenderScreenNavigationProp = NativeStackNavigationProp<
@@ -151,21 +151,10 @@ export default function VenderScreen({ navigation }: Props) {
   async function handleEmail() {
     if (!ticket || !ticket.email) return;
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permiso requerido', 'Necesitamos acceso a la galería para guardar el QR');
-        return;
-      }
-
-      const uri = await captureImage();
-      await MediaLibrary.createAssetAsync(uri);
-
-      const subject = encodeURIComponent(`Entrada - Acrobacia en Telas - ${ticket.nombreCompleto}`);
-      Linking.openURL(`mailto:${ticket.email}?subject=${subject}`).catch(() =>
-        Alert.alert('QR guardado', `El QR se guardó en la galería. Abrí tu correo y adjuntalo manualmente.`)
-      );
+      await sendEmail(ticket.id);
+      Alert.alert('Enviado', `El QR fue enviado a ${ticket.email}`);
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'No se pudo completar');
+      Alert.alert('Error', e.message || 'No se pudo enviar el email');
     }
   }
 

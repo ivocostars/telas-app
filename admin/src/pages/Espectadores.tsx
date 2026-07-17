@@ -15,6 +15,7 @@ import {
   bulkImport,
   getQrImageUrl,
   downloadPlantilla,
+  sendEmail,
 } from '../services/api'
 import type { Espectador, EspectadorInput, BulkImportResult } from '../types'
 
@@ -212,12 +213,13 @@ export default function Espectadores() {
     }
   }
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!showQr) return
-    downloadQr()
-    if (showQr.email) {
-      const subject = encodeURIComponent(`Entrada - Acrobacia en Telas - ${showQr.nombreCompleto}`)
-      window.open(`mailto:${showQr.email}?subject=${subject}`, '_blank')
+    try {
+      await sendEmail(showQr.id)
+      addToast('Email enviado correctamente', 'success')
+    } catch {
+      addToast('Error al enviar el email', 'error')
     }
   }
 
