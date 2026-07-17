@@ -136,7 +136,6 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   <th>Espectador</th>
-                  <th>DNI</th>
                   <th>Silla</th>
                   <th>Scanner</th>
                   <th>Hora</th>
@@ -146,7 +145,6 @@ export default function Dashboard() {
                 {stats.ultimos_ingresos.map((ing) => (
                   <tr key={ing.id}>
                     <td>{ing.nombreCompleto}</td>
-                    <td>{ing.dni}</td>
                     <td>
                       <span className={`badge ${ing.silla ? 'badge-success' : 'badge-muted'}`}>
                         {ing.silla ? 'Sí' : 'No'}

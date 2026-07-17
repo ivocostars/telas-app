@@ -31,7 +31,6 @@ async function seed() {
 
   for (let i = 0; i < names.length; i++) {
     const n = names[i];
-    const dni = String(40000000 + i);
     const qrHash = crypto
       .createHash("sha256")
       .update(crypto.randomUUID() + Date.now() + i)
@@ -41,12 +40,11 @@ async function seed() {
       .insert(espectadores)
       .values({
         nombreCompleto: n.nombre,
-        dni,
         email: `espectador${i + 1}@email.com`,
         silla: n.silla,
         qrHash,
       })
-      .onConflictDoNothing({ target: espectadores.dni });
+      .onConflictDoNothing({ target: espectadores.id });
   }
 
   console.log(`10 spectators seeded`);

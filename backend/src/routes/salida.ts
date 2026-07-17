@@ -50,7 +50,6 @@ router.post("/", authenticate, async (req: Request, res: Response) => {
       valido: true,
       espectador: {
         nombreCompleto: spectator.nombreCompleto,
-        dni: spectator.dni,
         silla: spectator.silla,
       },
     });

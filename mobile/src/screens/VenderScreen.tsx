@@ -34,7 +34,6 @@ interface Props {
 
 interface FormData {
   nombreCompleto: string;
-  dni: string;
   email: string;
   telefono: string;
   silla_reservada: boolean;
@@ -44,7 +43,6 @@ interface FormData {
 interface TicketData {
   id: number;
   nombreCompleto: string;
-  dni: string;
   qrHash: string;
   email: string;
   telefono: string;
@@ -53,7 +51,6 @@ interface TicketData {
 export default function VenderScreen({ navigation }: Props) {
   const [form, setForm] = useState<FormData>({
     nombreCompleto: '',
-    dni: '',
     email: '',
     telefono: '',
     silla_reservada: false,
@@ -68,9 +65,7 @@ export default function VenderScreen({ navigation }: Props) {
   }
 
   const isValid =
-    form.nombreCompleto.trim().length > 0 &&
-    form.nombreCompleto.trim().length > 0 &&
-    form.dni.trim().length > 0;
+    form.nombreCompleto.trim().length > 0;
 
   async function handleGenerate() {
     if (!isValid) return;
@@ -78,7 +73,6 @@ export default function VenderScreen({ navigation }: Props) {
     try {
       const data = await createEspectador({
         nombreCompleto: form.nombreCompleto.trim(),
-        dni: form.dni.trim(),
         email: form.email.trim() || undefined,
         telefono: form.telefono.trim() || undefined,
         silla: form.silla_reservada,
@@ -88,7 +82,6 @@ export default function VenderScreen({ navigation }: Props) {
       setTicket({
         id: data.id,
         nombreCompleto: form.nombreCompleto.trim(),
-        dni: form.dni.trim(),
         qrHash: data.qrHash,
         email: form.email.trim(),
         telefono: form.telefono.trim(),
@@ -138,7 +131,7 @@ export default function VenderScreen({ navigation }: Props) {
       else if (digits.length >= 10) phone = '549' + digits;
 
       const message = encodeURIComponent(
-        `🎟️ *Entrada - Telas*\n\n*Nombre:* ${ticket.nombreCompleto}\n*DNI:* ${ticket.dni}`
+        `🎟️ *Entrada - Telas*\n\n*Nombre:* ${ticket.nombreCompleto}`
       );
       Linking.openURL(`https://wa.me/${phone}?text=${message}`).catch(() =>
         Alert.alert('QR guardado', `El QR se guardó en la galería. Abrí WhatsApp y adjuntalo manualmente.`)
@@ -161,7 +154,6 @@ export default function VenderScreen({ navigation }: Props) {
   function handleClear() {
     setForm({
       nombreCompleto: '',
-      dni: '',
       email: '',
       telefono: '',
       silla_reservada: false,
@@ -191,7 +183,6 @@ export default function VenderScreen({ navigation }: Props) {
             <Text style={styles.captureName}>
               {ticket.nombreCompleto.toUpperCase()}
             </Text>
-            <Text style={styles.captureDni}>DNI: {ticket.dni}</Text>
           </View>
         </ViewShot>
       )}
@@ -220,15 +211,6 @@ export default function VenderScreen({ navigation }: Props) {
             value={form.nombreCompleto}
             onChangeText={(v) => updateField('nombreCompleto', v)}
             autoCapitalize="words"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="DNI *"
-            placeholderTextColor={COLORS.textMuted}
-            value={form.dni}
-            onChangeText={(v) => updateField('dni', v.replace(/\D/g, '').slice(0, 8))}
-            keyboardType="numeric"
-            maxLength={8}
           />
           <TextInput
             style={styles.input}
@@ -288,7 +270,6 @@ export default function VenderScreen({ navigation }: Props) {
             </View>
 
             <Text style={styles.ticketName}>{ticket.nombreCompleto}</Text>
-            <Text style={styles.ticketDni}>DNI: {ticket.dni}</Text>
 
             <View style={styles.actionRow}>
               <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
@@ -370,7 +351,6 @@ const styles = StyleSheet.create({
   },
   qrContainer: { padding: 12, backgroundColor: '#fff', borderRadius: 16, marginBottom: 16 },
   ticketName: { fontSize: 22, fontWeight: '700', color: COLORS.text },
-  ticketDni: { fontSize: 16, color: COLORS.textMuted, marginTop: 4, marginBottom: 20 },
   actionRow: { flexDirection: 'row', gap: 12, width: '100%' },
   actionButton: {
     flex: 1, backgroundColor: COLORS.bg, borderRadius: 14, paddingVertical: 14,
@@ -400,5 +380,4 @@ const styles = StyleSheet.create({
     fontSize: 22, fontWeight: '900', color: '#000', letterSpacing: 2,
     marginTop: 16, textAlign: 'center',
   },
-  captureDni: { fontSize: 16, color: '#444', marginTop: 6, fontWeight: '600' },
 });

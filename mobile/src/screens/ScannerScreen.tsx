@@ -36,7 +36,6 @@ interface Props {
 
 interface ScanHistoryItem {
   nombreCompleto: string;
-  dni: string;
   valido: boolean;
   timestamp: string;
 }
@@ -119,14 +118,13 @@ export default function ScannerScreen({ navigation }: Props) {
     setScanned(true);
     setLastQrHash(raw);
 
-    // Parse QR data (format: hash|nombreCompleto|dni|alumna)
+    // Parse QR data (format: hash|nombreCompleto|alumna)
     const parts = raw.split('|');
     const qrHash = parts[0];
-    const qrData: ValidarQrResponse['espectador'] = parts.length >= 4 ? {
+    const qrData: ValidarQrResponse['espectador'] = parts.length >= 3 ? {
       nombreCompleto: parts[1] || '',
-      dni: parts[3] || '',
       silla: false,
-      alumnaInvitada: parts[4] || null,
+      alumnaInvitada: parts[2] || null,
     } : undefined;
 
     try {
@@ -134,13 +132,13 @@ export default function ScannerScreen({ navigation }: Props) {
       if (res.valido) {
         showResult('valid', res.espectador);
         setScanHistory((prev) => [
-          { nombreCompleto: res.espectador?.nombreCompleto || '', dni: res.espectador?.dni || '', valido: true, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
+          { nombreCompleto: res.espectador?.nombreCompleto || '', valido: true, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
           ...prev.slice(0, 2),
         ]);
       } else if (res.motivo === 'QR ya utilizado') {
         showResult('rejected', res.espectador, res.primer_ingreso);
         setScanHistory((prev) => [
-          { nombreCompleto: res.espectador?.nombreCompleto || '', dni: res.espectador?.dni || '', valido: false, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
+          { nombreCompleto: res.espectador?.nombreCompleto || '', valido: false, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
           ...prev.slice(0, 2),
         ]);
       } else {
@@ -287,9 +285,6 @@ export default function ScannerScreen({ navigation }: Props) {
                   <View style={styles.resultDivider} />
                   <Text style={styles.resultName}>
                     {resultData.nombreCompleto}
-                  </Text>
-                  <Text style={styles.resultDni}>
-                    DNI: {resultData.dni}
                   </Text>
                   {resultData.alumnaInvitada && (
                     <Text style={styles.resultAlumna}>🎓 {resultData.alumnaInvitada}</Text>

@@ -30,7 +30,6 @@ router.get("/", authenticate, async (_req: Request, res: Response) => {
       .select({
         id: escaneos.id,
         nombreCompleto: espectadores.nombreCompleto,
-        dni: espectadores.dni,
         silla: espectadores.silla,
         scanner_nombre: escaneos.scannerNombre,
         creado_en: escaneos.creadoEn,

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
-import { eq, desc, asc, ilike, or, count, sql } from "drizzle-orm";
+import { eq, desc, asc, ilike, count, sql } from "drizzle-orm";
 import crypto from "node:crypto";
 import QRCode from "qrcode";
 import multer from "multer";
@@ -16,7 +16,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const createSchema = z.object({
   nombreCompleto: z.string().min(1, "Nombre requerido").max(200),
-  dni: z.string().max(8).regex(/^\d*$/, "DNI solo debe contener números").optional().nullable(),
   email: z.string().email("Email inválido").max(255).optional().nullable(),
   telefono: z.string().max(30).optional().nullable(),
   silla: z.boolean().optional().default(false),
@@ -26,7 +25,6 @@ const createSchema = z.object({
 
 const updateSchema = z.object({
   nombreCompleto: z.string().min(1).max(200).optional(),
-  dni: z.string().max(8).regex(/^\d*$/, "DNI solo debe contener números").optional().nullable(),
   email: z.string().email().max(255).optional().nullable(),
   telefono: z.string().max(30).optional().nullable(),
   silla: z.boolean().optional(),
@@ -43,10 +41,7 @@ router.get("/", authenticate, async (req: Request, res: Response) => {
     const offset = (page - 1) * limit;
 
     const whereClause = search
-      ? or(
-          ilike(espectadores.nombreCompleto, `%${search}%`),
-          ilike(espectadores.dni, `%${search}%`),
-        )
+      ? ilike(espectadores.nombreCompleto, `%${search}%`)
       : undefined;
 
     const total = await db
@@ -91,7 +86,7 @@ router.get("/plantilla", authenticate, requireAdmin, async (_req: Request, res: 
 
     ws.columns = [
       { header: "nombre", key: "nombre", width: 30 },
-      { header: "dni", key: "dni", width: 14 },
+      { header: "telefono", key: "telefono", width: 14 },
       { header: "email", key: "email", width: 28 },
       { header: "telefono", key: "telefono", width: 14 },
       { header: "silla", key: "silla", width: 10 },
@@ -100,9 +95,9 @@ router.get("/plantilla", authenticate, requireAdmin, async (_req: Request, res: 
 
     ws.getRow(1).font = { bold: true, color: { argb: "FF6C3CB5" } };
 
-    ws.addRow({ nombre: "Juan Pérez", apellido: "", dni: "40123456", email: "juan@email.com", telefono: "1144556677", silla: "SÍ", alumna_invitada: "" });
-    ws.addRow({ nombre: "María García", apellido: "", dni: "40987654", email: "", telefono: "", silla: "NO", alumna_invitada: "Morena González" });
-    ws.addRow({ nombre: "", apellido: "", dni: "", email: "", telefono: "", silla: "", alumna_invitada: "" });
+    ws.addRow({ nombre: "Juan Pérez", email: "juan@email.com", telefono: "1144556677", silla: "SÍ", alumna_invitada: "" });
+    ws.addRow({ nombre: "María García", email: "", telefono: "", silla: "NO", alumna_invitada: "Morena González" });
+    ws.addRow({ nombre: "", email: "", telefono: "", silla: "", alumna_invitada: "" });
 
     const addValidation = (colIdx: number) => {
       const col = ws.getColumn(colIdx);
@@ -174,7 +169,6 @@ router.post("/", authenticate, requireAdmin, async (req: Request, res: Response)
       .insert(espectadores)
       .values({
         nombreCompleto: body.nombreCompleto,
-        dni: body.dni || null,
         email: body.email ?? null,
         telefono: body.telefono ?? null,
         silla: body.silla ?? false,
@@ -190,10 +184,7 @@ router.post("/", authenticate, requireAdmin, async (req: Request, res: Response)
       res.status(400).json({ error: err.errors[0].message });
       return;
     }
-    if (isUniqueViolation(err)) {
-      res.status(409).json({ error: "Ya existe un espectador con ese DNI" });
-      return;
-    }
+
     console.error("Error creating espectador:", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
@@ -320,7 +311,6 @@ router.post("/bulk", authenticate, requireAdmin, upload.single("file"), async (r
 
       const nombreCompleto = row.nombre || row.Nombre || row.nombreCompleto || "";
       const apellido = row.apellido || row.Apellido || "";
-      const dni = String(row.dni || row.DNI || row.Dni || "");
       const email = row.email || row.Email || "";
       const telefono = row.telefono || row.Telefono || row.Teléfono || "";
       const sillaRaw = String(row.silla || row.Silla || "").toLowerCase();
@@ -328,7 +318,6 @@ router.post("/bulk", authenticate, requireAdmin, upload.single("file"), async (r
         const fullName = [nombreCompleto, apellido].filter(Boolean).join(" ") || nombreCompleto;
         const parsed = createSchema.parse({
           nombreCompleto: fullName,
-          dni: dni || null,
           email: email || null,
           telefono: telefono || null,
           silla: sillaRaw === "true" || sillaRaw === "1" || sillaRaw === "sí" || sillaRaw === "si",
@@ -342,7 +331,6 @@ router.post("/bulk", authenticate, requireAdmin, upload.single("file"), async (r
 
         await db.insert(espectadores).values({
           nombreCompleto: parsed.nombreCompleto,
-          dni: parsed.dni ?? null,
           email: parsed.email ?? null,
           telefono: parsed.telefono ?? null,
           silla: parsed.silla ?? false,
@@ -390,7 +378,6 @@ router.get("/:id/qr", authenticate, async (req: Request, res: Response) => {
     const qrData = [
       spectator.qrHash,
       spectator.nombreCompleto,
-      spectator.dni || "",
       spectator.alumnaInvitada || "",
     ].join("|");
 

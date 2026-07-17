@@ -1,7 +1,6 @@
 export interface Espectador {
   id: number
   nombreCompleto: string
-  dni: string | null
   email: string | null
   telefono: string | null
   silla: boolean
@@ -15,7 +14,6 @@ export interface Espectador {
 
 export interface EspectadorInput {
   nombreCompleto: string
-  dni?: string | null
   email?: string
   telefono?: string
   silla?: boolean
@@ -26,7 +24,6 @@ export interface EspectadorInput {
 export interface UltimoIngreso {
   id: number
   nombreCompleto: string
-  dni: string
   silla: boolean
   scanner_nombre: string
   creado_en: string

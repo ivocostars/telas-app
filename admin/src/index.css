@@ -656,10 +656,6 @@ a:hover { text-decoration: underline; }
   margin-top: 4px;
 }
 
-.qr-dni {
-  font-size: 0.85rem;
-  color: var(--color-text-light);
-}
 
 .qr-badge {
   font-size: 0.85rem;

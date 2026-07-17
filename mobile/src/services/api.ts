@@ -62,7 +62,6 @@ export function login(email: string, password: string): Promise<LoginResponse> {
 export interface UltimoIngreso {
   id: number;
   nombreCompleto: string;
-  dni: string;
   silla: boolean;
   scanner_nombre: string;
   creado_en: string;
@@ -86,7 +85,6 @@ export function getEstadisticas(): Promise<EstadisticasResponse> {
 
 export interface CreateEspectadorData {
   nombreCompleto: string;
-  dni: string;
   email?: string;
   telefono?: string;
   silla: boolean;
@@ -97,7 +95,6 @@ export interface CreateEspectadorData {
 export interface CreateEspectadorResponse {
   id: number;
   nombreCompleto: string;
-  dni: string;
   qrHash: string;
 }
 
@@ -112,7 +109,6 @@ export function createEspectador(
 
 export interface EspectadorData {
   nombreCompleto: string;
-  dni: string;
   silla: boolean;
   alumnaInvitada?: string | null;
 }

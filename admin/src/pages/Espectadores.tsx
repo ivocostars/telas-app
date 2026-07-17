@@ -41,7 +41,6 @@ export default function Espectadores() {
 
   const [formData, setFormData] = useState<EspectadorInput>({
     nombreCompleto: '',
-    dni: '',
     email: '',
     telefono: '',
     silla: false,
@@ -86,7 +85,7 @@ export default function Espectadores() {
 
   const openNew = () => {
     setEditing(null)
-    setFormData({ nombreCompleto: '', dni: '', email: '', telefono: '', silla: false, alumnaInvitada: '' })
+    setFormData({ nombreCompleto: '', email: '', telefono: '', silla: false, alumnaInvitada: '' })
     setShowForm(true)
   }
 
@@ -94,7 +93,6 @@ export default function Espectadores() {
     setEditing(e)
     setFormData({
       nombreCompleto: e.nombreCompleto,
-      dni: e.dni,
       email: e.email || '',
       telefono: e.telefono || '',
       silla: e.silla,
@@ -164,7 +162,7 @@ export default function Espectadores() {
     setShowQr(e)
     setQrDataUrl('')
     try {
-      const qrData = [e.qrHash, e.nombreCompleto, e.dni, e.alumnaInvitada || ''].join('|')
+      const qrData = [e.qrHash, e.nombreCompleto, e.alumnaInvitada || ''].join('|')
       const url = await QRCode.toDataURL(qrData)
       setQrDataUrl(url)
     } catch {
@@ -175,7 +173,7 @@ export default function Espectadores() {
   const downloadQr = () => {
     if (!qrDataUrl || !showQr) return
     const link = document.createElement('a')
-    link.download = `qr-${showQr.dni}.png`
+    link.download = `qr-${showQr.id}.png`
     link.href = qrDataUrl
     link.click()
   }
@@ -188,14 +186,13 @@ export default function Espectadores() {
         '',
         i + 1,
         e.nombreCompleto,
-        e.dni,
         e.alumnaInvitada || '',
         e.silla ? 'SÍ' : 'NO',
         e.email || '',
         e.telefono || '',
       ])
       autoTable(doc, {
-        head: [['', '#', 'Nombre completo', 'DNI', 'Alumna', 'Silla', 'Email', 'Teléfono']],
+        head: [['', '#', 'Nombre completo', 'Alumna', 'Silla', 'Email', 'Teléfono']],
         body: rows,
         styles: { fontSize: 7, cellPadding: 1.5, lineColor: [0, 0, 0], lineWidth: 0.1 },
         headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 7, fontStyle: 'bold' },
@@ -241,7 +238,7 @@ export default function Espectadores() {
         else if (digits.length >= 10) phone = '549' + digits
       }
       const msg = encodeURIComponent(
-        `🎟️ *Entrada - Telas*\n\n*Nombre:* ${showQr.nombreCompleto}\n*DNI:* ${showQr.dni}`
+        `🎟️ *Entrada - Telas*\n\n*Nombre:* ${showQr.nombreCompleto}`
       )
       window.open(`https://wa.me/${phone}?text=${msg}`, '_blank')
     }
@@ -277,7 +274,7 @@ export default function Espectadores() {
           <input
             type="text"
             className="form-input search-input"
-            placeholder="Buscar por nombre o DNI..."
+            placeholder="Buscar por nombre..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
           />
@@ -315,7 +312,7 @@ export default function Espectadores() {
               <thead>
                 <tr>
                   <th>Nombre completo</th>
-                  <th>DNI</th>
+                  <th>Teléfono</th>
                   <th>Alumna</th>
                   <th>Silla</th>
                   <th>Ingresado</th>
@@ -328,7 +325,7 @@ export default function Espectadores() {
                 {espectadores.map((esp) => (
                   <tr key={esp.id}>
                     <td>{esp.nombreCompleto}</td>
-                    <td>{esp.dni}</td>
+                    <td>{esp.telefono || '—'}</td>
                     <td>
                       {esp.alumnaInvitada ? (
                         <span className="badge badge-primary">{esp.alumnaInvitada}</span>
@@ -384,10 +381,6 @@ export default function Espectadores() {
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label" htmlFor="dni">DNI</label>
-              <input id="dni" className="form-input" value={formData.dni || ''} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} />
-            </div>
-            <div className="form-group">
               <label className="form-label" htmlFor="email">Email</label>
               <input id="email" type="email" className="form-input" value={formData.email || ''} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
             </div>
@@ -426,7 +419,6 @@ export default function Espectadores() {
               <div className="loading-container"><div className="spinner" /><p>Generando QR...</p></div>
             )}
             <p className="qr-name">{showQr.nombreCompleto}</p>
-            <p className="qr-dni">DNI: {showQr.dni}</p>
             {showQr.alumnaInvitada && <p className="qr-badge">🎓 {showQr.alumnaInvitada}</p>}
             <div className="qr-actions">
               <button className="btn btn-primary" onClick={downloadQr}>Descargar QR</button>
@@ -472,7 +464,7 @@ export default function Espectadores() {
         ) : (
           <div className="import-area">
             <div className="import-info">
-              <p className="import-format">Columnas: <code>nombre</code> <code>dni</code> <code>email</code> <code>telefono</code> <code>silla</code> <code>alumna_invitada</code></p>
+              <p className="import-format">Columnas: <code>nombre</code> <code>email</code> <code>telefono</code> <code>silla</code> <code>alumna_invitada</code></p>
             </div>
             <div className="import-actions">
               <button className="btn btn-outline" onClick={downloadPlantilla}>📥 Descargar plantilla</button>
@@ -494,7 +486,7 @@ export default function Espectadores() {
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Confirmar eliminación">
         {deleteTarget && (
           <div className="confirm-content">
-            <p>¿Estás seguro de que querés eliminar a <strong>{deleteTarget.nombreCompleto}</strong> (DNI: {deleteTarget.dni})?</p>
+            <p>¿Estás seguro de que querés eliminar a <strong>{deleteTarget.nombreCompleto}</strong>?</p>
             <p className="confirm-warning">Esta acción no se puede deshacer.</p>
             <div className="form-actions">
               <button className="btn btn-outline" onClick={() => setDeleteTarget(null)}>Cancelar</button>
