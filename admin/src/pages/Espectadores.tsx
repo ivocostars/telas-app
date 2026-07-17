@@ -192,7 +192,7 @@ export default function Espectadores() {
         e.telefono || '',
       ])
       autoTable(doc, {
-        head: [['', '#', 'Nombre', 'Apellido', 'DNI', 'Alumna', 'Silla', 'Email', 'Teléfono']],
+        head: [['', '#', 'Nombre completo', 'DNI', 'Alumna', 'Silla', 'Email', 'Teléfono']],
         body: rows,
         styles: { fontSize: 7, cellPadding: 1.5, lineColor: [0, 0, 0], lineWidth: 0.1 },
         headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 7, fontStyle: 'bold' },
@@ -306,8 +306,7 @@ export default function Espectadores() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Apellido</th>
+                  <th>Nombre completo</th>
                   <th>DNI</th>
                   <th>Alumna</th>
                   <th>Silla</th>
