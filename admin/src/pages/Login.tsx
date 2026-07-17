@@ -17,10 +17,11 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
 
   const [showRecover, setShowRecover] = useState(false)
-  const [recoverEmail, setRecoverEmail] = useState('')
-  const [recoverCode, setRecoverCode] = useState('')
+  const [recStep, setRecStep] = useState<'email' | 'reset'>('email')
+  const [recEmail, setRecEmail] = useState('')
+  const [recCode, setRecCode] = useState('')
   const [newPass, setNewPass] = useState('')
-  const [recoverMsg, setRecoverMsg] = useState('')
+  const [recMsg, setRecMsg] = useState('')
   const [recovering, setRecovering] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,27 +39,51 @@ export default function Login() {
     }
   }
 
-  const handleRecover = async () => {
-    if (!recoverEmail || !recoverCode || !newPass) return
-    const pwErr = validatePass(newPass)
-    if (pwErr) { setRecoverMsg(pwErr); return }
+  const handleSendCode = async () => {
+    if (!recEmail.trim()) return
     setRecovering(true)
-    setRecoverMsg('')
+    setRecMsg('')
     try {
-      const res = await fetch('/api/auth/recover', {
+      const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: recoverEmail, recoveryCode: recoverCode, newPassword: newPass }),
+        body: JSON.stringify({ email: recEmail.trim() }),
       })
       const data = await res.json()
       if (data.ok) {
-        setRecoverMsg('✅ Contraseña restablecida. Iniciá sesión con tu nueva contraseña.')
-        setTimeout(() => { setShowRecover(false); setRecoverMsg('') }, 3000)
+        setRecStep('reset')
+        setRecMsg('📧 Si el email existe, recibiste un código de 6 dígitos.')
       } else {
-        setRecoverMsg(data.error || 'Error al recuperar')
+        setRecMsg(data.error || 'Error')
       }
     } catch {
-      setRecoverMsg('Error de conexión')
+      setRecMsg('Error de conexión')
+    } finally {
+      setRecovering(false)
+    }
+  }
+
+  const handleReset = async () => {
+    if (!recCode.trim() || !newPass.trim()) return
+    const pwErr = validatePass(newPass)
+    if (pwErr) { setRecMsg(pwErr); return }
+    setRecovering(true)
+    setRecMsg('')
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: recEmail.trim(), code: recCode.trim(), newPassword: newPass }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setRecMsg('✅ Contraseña restablecida')
+        setTimeout(() => { setShowRecover(false); setRecStep('email'); setRecMsg(''); setRecCode(''); setNewPass('') }, 2000)
+      } else {
+        setRecMsg(data.error || 'Error')
+      }
+    } catch {
+      setRecMsg('Error de conexión')
     } finally {
       setRecovering(false)
     }
@@ -83,7 +108,7 @@ export default function Login() {
           <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
-          <button type="button" className="btn btn-block" style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--color-text-light)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }} onClick={() => setShowRecover(true)}>
+          <button type="button" className="btn btn-block" style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--color-text-light)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }} onClick={() => { setShowRecover(true); setRecStep('email'); setRecMsg(''); setRecCode(''); setNewPass('') }}>
             ¿Olvidaste tu contraseña?
           </button>
         </form>
@@ -91,31 +116,48 @@ export default function Login() {
 
       <Modal open={showRecover} onClose={() => setShowRecover(false)} title="Recuperar contraseña">
         <div className="form">
-          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 8 }}>
-            Necesitás el código de recuperación del servidor para restablecer la contraseña.
-          </p>
-          <div className="form-group">
-            <label className="form-label">Email</label>
-            <input type="email" className="form-input" value={recoverEmail} onChange={(e) => setRecoverEmail(e.target.value)} placeholder="tu@email.com" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Código de recuperación</label>
-            <input type="text" className="form-input" value={recoverCode} onChange={(e) => setRecoverCode(e.target.value)} placeholder="Ingresá el código del servidor" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Nueva contraseña</label>
-            <input type="password" className="form-input" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Mínimo 8 + 1 especial" />
-            {newPass.length > 0 && (
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 2 }}>{validatePass(newPass) || '✅'}</span>
-            )}
-          </div>
-          {recoverMsg && <p className="form-error" style={{ color: recoverMsg.includes('✅') ? 'var(--color-success)' : 'var(--color-error)' }}>{recoverMsg}</p>}
-          <div className="form-actions">
-            <button type="button" className="btn btn-outline" onClick={() => setShowRecover(false)}>Cancelar</button>
-            <button type="button" className="btn btn-primary" onClick={handleRecover} disabled={recovering}>
-              {recovering ? 'Procesando...' : 'Restablecer'}
-            </button>
-          </div>
+          {recStep === 'email' ? (
+            <>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 8 }}>
+                Te enviaremos un código de recuperación a tu email.
+              </p>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input type="email" className="form-input" value={recEmail} onChange={(e) => setRecEmail(e.target.value)} placeholder="tu@email.com" />
+              </div>
+              {recMsg && <p className="form-error" style={{ color: 'var(--color-text-light)' }}>{recMsg}</p>}
+              <div className="form-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setShowRecover(false)}>Cancelar</button>
+                <button type="button" className="btn btn-primary" onClick={handleSendCode} disabled={recovering || !recEmail.trim()}>
+                  {recovering ? 'Enviando...' : 'Enviar código'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 8 }}>
+                Ingresá el código que recibiste por email y tu nueva contraseña.
+              </p>
+              <div className="form-group">
+                <label className="form-label">Código de 6 dígitos</label>
+                <input type="text" className="form-input" value={recCode} onChange={(e) => setRecCode(e.target.value)} placeholder="123456" maxLength={6} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nueva contraseña</label>
+                <input type="password" className="form-input" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Mínimo 8 + 1 especial" />
+                {newPass.length > 0 && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 2 }}>{validatePass(newPass) || '✅'}</span>
+                )}
+              </div>
+              {recMsg && <p className="form-error" style={{ color: recMsg.includes('✅') ? 'var(--color-success)' : recMsg.includes('📧') ? 'var(--color-text-light)' : 'var(--color-error)' }}>{recMsg}</p>}
+              <div className="form-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setRecStep('email')}>← Volver</button>
+                <button type="button" className="btn btn-primary" onClick={handleReset} disabled={recovering}>
+                  {recovering ? 'Procesando...' : 'Restablecer'}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     </div>

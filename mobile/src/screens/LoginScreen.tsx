@@ -38,6 +38,7 @@ export default function LoginScreen({ navigation }: Props) {
   const setToken = useAppStore((s) => s.setToken);
 
   const [showRecover, setShowRecover] = useState(false);
+  const [recStep, setRecStep] = useState<'email' | 'reset'>('email');
   const [recEmail, setRecEmail] = useState('');
   const [recCode, setRecCode] = useState('');
   const [recNewPw, setRecNewPw] = useState('');
@@ -78,35 +79,45 @@ export default function LoginScreen({ navigation }: Props) {
     }
   }
 
-  async function handleRecover() {
-    if (!recEmail.trim() || !recCode.trim() || !recNewPw.trim()) {
-      setRecMsg('Completá todos los campos');
-      return;
-    }
-    if (recNewPw.length < 8 || !/[!@#$%^&*(),.?":{}|<>]/.test(recNewPw)) {
-      setRecMsg('Mínimo 8 caracteres y 1 especial');
-      return;
-    }
-    setRecLoading(true);
-    setRecMsg('');
+  async function handleSendCode() {
+    if (!recEmail.trim()) { setRecMsg('Ingresá tu email'); return; }
+    setRecLoading(true); setRecMsg('');
     try {
-      const res = await fetch(`${API_URL}/auth/recover`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: recEmail.trim(), recoveryCode: recCode.trim(), newPassword: recNewPw }),
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: recEmail.trim() }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setRecStep('reset');
+        setRecMsg('📧 Si el email existe, recibiste un código');
+      } else {
+        setRecMsg(data.error || 'Error');
+      }
+    } catch { setRecMsg('Error de conexión'); }
+    finally { setRecLoading(false); }
+  }
+
+  async function handleResetPassword() {
+    if (!recCode.trim() || !recNewPw.trim()) { setRecMsg('Completá todos los campos'); return; }
+    if (recNewPw.length < 8 || !/[!@#$%^&*(),.?":{}|<>]/.test(recNewPw)) {
+      setRecMsg('Mínimo 8 caracteres y 1 especial'); return;
+    }
+    setRecLoading(true); setRecMsg('');
+    try {
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: recEmail.trim(), code: recCode.trim(), newPassword: recNewPw }),
       });
       const data = await res.json();
       if (data.ok) {
         setRecMsg('✅ Contraseña restablecida');
-        setTimeout(() => { setShowRecover(false); setRecMsg(''); setRecNewPw(''); setRecCode(''); }, 2000);
+        setTimeout(() => { setShowRecover(false); setRecStep('email'); setRecMsg(''); setRecNewPw(''); setRecCode(''); }, 2000);
       } else {
         setRecMsg(data.error || 'Error');
       }
-    } catch {
-      setRecMsg('Error de conexión');
-    } finally {
-      setRecLoading(false);
-    }
+    } catch { setRecMsg('Error de conexión'); }
+    finally { setRecLoading(false); }
   }
 
   return (
@@ -169,24 +180,37 @@ export default function LoginScreen({ navigation }: Props) {
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Recuperar contraseña</Text>
-              <Text style={styles.modalSub}>Usá el código de recuperación del servidor</Text>
 
-              <TextInput style={styles.input} placeholder="Email" placeholderTextColor={COLORS.textMuted} value={recEmail} onChangeText={setRecEmail} keyboardType="email-address" autoCapitalize="none" />
-              <TextInput style={styles.input} placeholder="Código de recuperación" placeholderTextColor={COLORS.textMuted} value={recCode} onChangeText={setRecCode} autoCapitalize="none" />
-              
-              <View style={styles.pwRow}>
-                <TextInput style={[styles.input, { flex: 1 }]} placeholder="Nueva contraseña" placeholderTextColor={COLORS.textMuted} value={recNewPw} onChangeText={setRecNewPw} secureTextEntry={!recShowPw} />
-                <TouchableOpacity style={styles.eyeBtn} onPress={() => setRecShowPw(!recShowPw)}>
-                  <Text style={styles.eyeIcon}>{recShowPw ? '👁️' : '👁️‍🗨️'}</Text>
-                </TouchableOpacity>
-              </View>
+              {recStep === 'email' ? (
+                <>
+                  <Text style={styles.modalSub}>Te enviaremos un código a tu email</Text>
+                  <TextInput style={styles.input} placeholder="Email" placeholderTextColor={COLORS.textMuted} value={recEmail} onChangeText={setRecEmail} keyboardType="email-address" autoCapitalize="none" />
+                  {recMsg ? <Text style={styles.recMsg}>{recMsg}</Text> : null}
+                  <TouchableOpacity style={[styles.button, recLoading && styles.buttonDisabled]} onPress={handleSendCode} disabled={recLoading}>
+                    {recLoading ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.buttonText}>Enviar código</Text>}
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.modalSub}>Ingresá el código recibido y tu nueva contraseña</Text>
+                  <TextInput style={styles.input} placeholder="Código de 6 dígitos" placeholderTextColor={COLORS.textMuted} value={recCode} onChangeText={setRecCode} keyboardType="number-pad" maxLength={6} />
+                  <View style={styles.pwRow}>
+                    <TextInput style={[styles.input, { flex: 1 }]} placeholder="Nueva contraseña" placeholderTextColor={COLORS.textMuted} value={recNewPw} onChangeText={setRecNewPw} secureTextEntry={!recShowPw} />
+                    <TouchableOpacity style={styles.eyeBtn} onPress={() => setRecShowPw(!recShowPw)}>
+                      <Text style={styles.eyeIcon}>{recShowPw ? '👁️' : '👁️‍🗨️'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {recMsg ? <Text style={[styles.recMsg, recMsg.includes('✅') ? { color: COLORS.success } : recMsg.includes('📧') ? { color: COLORS.textMuted } : { color: COLORS.error }]}>{recMsg}</Text> : null}
+                  <TouchableOpacity style={[styles.button, recLoading && styles.buttonDisabled]} onPress={handleResetPassword} disabled={recLoading}>
+                    {recLoading ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.buttonText}>Restablecer</Text>}
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setRecStep('email')}>
+                    <Text style={styles.cancelText}>← Volver</Text>
+                  </TouchableOpacity>
+                </>
+              )}
 
-              {recMsg ? <Text style={[styles.recMsg, recMsg.includes('✅') ? { color: COLORS.success } : { color: COLORS.error }]}>{recMsg}</Text> : null}
-
-              <TouchableOpacity style={[styles.button, recLoading && styles.buttonDisabled]} onPress={handleRecover} disabled={recLoading}>
-                {recLoading ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.buttonText}>Restablecer</Text>}
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowRecover(false); setRecMsg(''); }}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowRecover(false); setRecStep('email'); setRecMsg(''); }}>
                 <Text style={styles.cancelText}>Cancelar</Text>
               </TouchableOpacity>
             </View>

@@ -62,8 +62,8 @@ export function Layout() {
     if (!newEmail || !newPass) return
     setCreating(true)
     try {
-      await createUsuario(newEmail, newPass, newRol)
-      addToast('Usuario creado', 'success')
+      const res = await createUsuario(newEmail, newPass, newRol)
+      addToast(`Usuario creado. Email enviado a ${newEmail}`, 'success')
       setNewEmail('')
       setNewPass('')
       const data = await getUsuarios()

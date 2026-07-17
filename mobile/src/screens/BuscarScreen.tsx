@@ -29,7 +29,6 @@ interface Props {
 interface Spectator {
   id: number;
   nombreCompleto: string;
-  dni: string;
   alumnaInvitada: string | null;
   silla: boolean;
   ingresado: boolean;
@@ -68,7 +67,6 @@ export default function BuscarScreen({ navigation }: Props) {
       <View style={styles.row}>
         <View style={styles.rowInfo}>
           <Text style={styles.rowName}>{item.nombreCompleto}</Text>
-          <Text style={styles.rowDni}>DNI: {item.dni}</Text>
           {item.alumnaInvitada && <Text style={styles.rowAlumna}>🎓 {item.alumnaInvitada}</Text>}
         </View>
         <View style={styles.rowStatus}>
@@ -150,7 +148,6 @@ const styles = StyleSheet.create({
   },
   rowInfo: { flex: 1 },
   rowName: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  rowDni: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
   rowAlumna: { fontSize: 12, color: COLORS.primaryLight, marginTop: 2 },
   rowStatus: { alignItems: 'center', gap: 4 },
   statusDot: { width: 10, height: 10, borderRadius: 5 },

@@ -17,9 +17,21 @@ export const usuarios = pgTable("usuarios", {
     .defaultNow(),
 });
 
+export const recoveryCodes = pgTable("recovery_codes", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  code: varchar("code", { length: 64 }).notNull(),
+  expiresEn: timestamp("expires_en", { withTimezone: true }).notNull(),
+  usado: boolean("usado").notNull().default(false),
+  creadoEn: timestamp("creado_en", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const espectadores = pgTable("espectadores", {
   id: serial("id").primaryKey(),
   nombreCompleto: varchar("nombre_completo", { length: 200 }).notNull(),
+  dni: varchar("dni", { length: 15 }).unique(),
   email: varchar("email", { length: 255 }),
   telefono: varchar("telefono", { length: 30 }),
   silla: boolean("silla").notNull().default(false),
