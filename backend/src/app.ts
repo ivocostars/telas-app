@@ -45,15 +45,12 @@ app.get("/api/apk/descargar", async (req, res) => {
   if (token) { try { const p = jwt.verify(token, JWT_SECRET) as any; authorized = p.purpose === "apk_download"; } catch {} }
   if (!authorized) { res.status(401).json({ error: "No autorizado" }); return; }
 
-  const fs = await import("node:fs");
-  const stat = fs.statSync(apkPath);
-  res.set({
-    "Content-Type": "application/vnd.android.package-archive",
-    "Content-Length": String(stat.size),
-    "Content-Disposition": "attachment; filename=\"telas-app.apk\"",
-    "Accept-Ranges": "bytes",
+  res.type("application/vnd.android.package-archive").download(apkPath, "telas-app.apk", {
+    headers: {
+      "X-Accel-Buffering": "no",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+    },
   });
-  fs.createReadStream(apkPath).pipe(res);
 });
 
 app.get("/api/health", (_req, res) => {
