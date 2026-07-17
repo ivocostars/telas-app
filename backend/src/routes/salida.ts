@@ -49,8 +49,7 @@ router.post("/", authenticate, async (req: Request, res: Response) => {
     res.json({
       valido: true,
       espectador: {
-        nombre: spectator.nombre,
-        apellido: spectator.apellido,
+        nombreCompleto: spectator.nombreCompleto,
         dni: spectator.dni,
         silla: spectator.silla,
       },

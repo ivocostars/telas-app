@@ -15,9 +15,8 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 const createSchema = z.object({
-  nombre: z.string().min(1, "Nombre requerido").max(100),
-  apellido: z.string().min(1, "Apellido requerido").max(100),
-  dni: z.string().min(1, "DNI requerido").max(8).regex(/^\d+$/, "DNI solo debe contener números"),
+  nombreCompleto: z.string().min(1, "Nombre requerido").max(200),
+  dni: z.string().max(8).regex(/^\d*$/, "DNI solo debe contener números").optional().nullable(),
   email: z.string().email("Email inválido").max(255).optional().nullable(),
   telefono: z.string().max(30).optional().nullable(),
   silla: z.boolean().optional().default(false),
@@ -26,13 +25,13 @@ const createSchema = z.object({
 });
 
 const updateSchema = z.object({
-  nombre: z.string().min(1).max(100).optional(),
-  apellido: z.string().min(1).max(100).optional(),
-  dni: z.string().min(1).max(8).regex(/^\d+$/, "DNI solo debe contener números").optional(),
+  nombreCompleto: z.string().min(1).max(200).optional(),
+  dni: z.string().max(8).regex(/^\d*$/, "DNI solo debe contener números").optional().nullable(),
   email: z.string().email().max(255).optional().nullable(),
   telefono: z.string().max(30).optional().nullable(),
   silla: z.boolean().optional(),
   alumnaInvitada: z.string().max(200).optional().nullable(),
+  vendidoEnPuerta: z.boolean().optional(),
 });
 
 // GET /api/espectadores
@@ -45,8 +44,7 @@ router.get("/", authenticate, async (req: Request, res: Response) => {
 
     const whereClause = search
       ? or(
-          ilike(espectadores.nombre, `%${search}%`),
-          ilike(espectadores.apellido, `%${search}%`),
+          ilike(espectadores.nombreCompleto, `%${search}%`),
           ilike(espectadores.dni, `%${search}%`),
         )
       : undefined;
@@ -63,7 +61,7 @@ router.get("/", authenticate, async (req: Request, res: Response) => {
       .where(whereClause)
       .orderBy(
         sql`${espectadores.alumnaInvitada} ASC NULLS LAST`,
-        asc(espectadores.apellido)
+        asc(espectadores.nombreCompleto)
       )
       .limit(limit)
       .offset(offset);
@@ -92,8 +90,7 @@ router.get("/plantilla", authenticate, requireAdmin, async (_req: Request, res: 
     const ws = wb.addWorksheet("Espectadores");
 
     ws.columns = [
-      { header: "nombre", key: "nombre", width: 20 },
-      { header: "apellido", key: "apellido", width: 20 },
+      { header: "nombre", key: "nombre", width: 30 },
       { header: "dni", key: "dni", width: 14 },
       { header: "email", key: "email", width: 28 },
       { header: "telefono", key: "telefono", width: 14 },
@@ -103,8 +100,8 @@ router.get("/plantilla", authenticate, requireAdmin, async (_req: Request, res: 
 
     ws.getRow(1).font = { bold: true, color: { argb: "FF6C3CB5" } };
 
-    ws.addRow({ nombre: "Juan", apellido: "Pérez", dni: "40123456", email: "juan@email.com", telefono: "1144556677", silla: "SÍ", alumna_invitada: "" });
-    ws.addRow({ nombre: "María", apellido: "García", dni: "40987654", email: "", telefono: "", silla: "NO", alumna_invitada: "Morena González" });
+    ws.addRow({ nombre: "Juan Pérez", apellido: "", dni: "40123456", email: "juan@email.com", telefono: "1144556677", silla: "SÍ", alumna_invitada: "" });
+    ws.addRow({ nombre: "María García", apellido: "", dni: "40987654", email: "", telefono: "", silla: "NO", alumna_invitada: "Morena González" });
     ws.addRow({ nombre: "", apellido: "", dni: "", email: "", telefono: "", silla: "", alumna_invitada: "" });
 
     const addValidation = (colIdx: number) => {
@@ -121,6 +118,7 @@ router.get("/plantilla", authenticate, requireAdmin, async (_req: Request, res: 
         }
       });
     };
+    addValidation(5);
     addValidation(6);
 
     const buffer = await wb.xlsx.writeBuffer();
@@ -175,9 +173,8 @@ router.post("/", authenticate, requireAdmin, async (req: Request, res: Response)
     const inserted = await db
       .insert(espectadores)
       .values({
-        nombre: body.nombre,
-        apellido: body.apellido,
-        dni: body.dni,
+        nombreCompleto: body.nombreCompleto,
+        dni: body.dni || null,
         email: body.email ?? null,
         telefono: body.telefono ?? null,
         silla: body.silla ?? false,
@@ -321,17 +318,17 @@ router.post("/bulk", authenticate, requireAdmin, upload.single("file"), async (r
       const row = records[i];
       const rowNum = i + 1;
 
-      const nombre = row.nombre || row.Nombre || "";
+      const nombreCompleto = row.nombre || row.Nombre || row.nombreCompleto || "";
       const apellido = row.apellido || row.Apellido || "";
       const dni = String(row.dni || row.DNI || row.Dni || "");
       const email = row.email || row.Email || "";
       const telefono = row.telefono || row.Telefono || row.Teléfono || "";
       const sillaRaw = String(row.silla || row.Silla || "").toLowerCase();
       try {
+        const fullName = [nombreCompleto, apellido].filter(Boolean).join(" ") || nombreCompleto;
         const parsed = createSchema.parse({
-          nombre,
-          apellido,
-          dni,
+          nombreCompleto: fullName,
+          dni: dni || null,
           email: email || null,
           telefono: telefono || null,
           silla: sillaRaw === "true" || sillaRaw === "1" || sillaRaw === "sí" || sillaRaw === "si",
@@ -344,9 +341,8 @@ router.post("/bulk", authenticate, requireAdmin, upload.single("file"), async (r
           .digest("hex");
 
         await db.insert(espectadores).values({
-          nombre: parsed.nombre,
-          apellido: parsed.apellido,
-          dni: parsed.dni,
+          nombreCompleto: parsed.nombreCompleto,
+          dni: parsed.dni ?? null,
           email: parsed.email ?? null,
           telefono: parsed.telefono ?? null,
           silla: parsed.silla ?? false,
@@ -393,9 +389,8 @@ router.get("/:id/qr", authenticate, async (req: Request, res: Response) => {
 
     const qrData = [
       spectator.qrHash,
-      spectator.nombre,
-      spectator.apellido,
-      spectator.dni,
+      spectator.nombreCompleto,
+      spectator.dni || "",
       spectator.alumnaInvitada || "",
     ].join("|");
 
@@ -450,7 +445,7 @@ router.post("/:id/email", authenticate, requireAdmin, async (req: Request, res: 
       spectator.email,
       "Tu código QR para Acrobacia en Telas",
       qrBuffer,
-      `${spectator.nombre} ${spectator.apellido}`,
+      spectator.nombreCompleto,
     );
 
     res.json({ sent: true });

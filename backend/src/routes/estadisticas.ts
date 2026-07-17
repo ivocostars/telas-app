@@ -29,8 +29,7 @@ router.get("/", authenticate, async (_req: Request, res: Response) => {
     const ultimosIngresos = await db
       .select({
         id: escaneos.id,
-        nombre: espectadores.nombre,
-        apellido: espectadores.apellido,
+        nombreCompleto: espectadores.nombreCompleto,
         dni: espectadores.dni,
         silla: espectadores.silla,
         scanner_nombre: escaneos.scannerNombre,

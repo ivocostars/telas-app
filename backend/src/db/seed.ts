@@ -17,16 +17,16 @@ async function seed() {
   console.log("Admin user created: admin@telas.com / admin123");
 
   const names = [
-    { nombre: "Lucía", apellido: "González", silla: true },
-    { nombre: "Martín", apellido: "Rodríguez", silla: false },
-    { nombre: "Camila", apellido: "Fernández", silla: true },
-    { nombre: "Santiago", apellido: "López", silla: false },
-    { nombre: "Valentina", apellido: "Martínez", silla: true },
-    { nombre: "Mateo", apellido: "Pérez", silla: false },
-    { nombre: "Sofía", apellido: "García", silla: true },
-    { nombre: "Benjamín", apellido: "Díaz", silla: false },
-    { nombre: "Isabella", apellido: "Torres", silla: true },
-    { nombre: "Facundo", apellido: "Ramírez", silla: false },
+    { nombre: "Lucía González", silla: true },
+    { nombre: "Martín Rodríguez", silla: false },
+    { nombre: "Camila Fernández", silla: true },
+    { nombre: "Santiago López", silla: false },
+    { nombre: "Valentina Martínez", silla: true },
+    { nombre: "Mateo Pérez", silla: false },
+    { nombre: "Sofía García", silla: true },
+    { nombre: "Benjamín Díaz", silla: false },
+    { nombre: "Isabella Torres", silla: true },
+    { nombre: "Facundo Ramírez", silla: false },
   ];
 
   for (let i = 0; i < names.length; i++) {
@@ -40,8 +40,7 @@ async function seed() {
     await db
       .insert(espectadores)
       .values({
-        nombre: n.nombre,
-        apellido: n.apellido,
+        nombreCompleto: n.nombre,
         dni,
         email: `espectador${i + 1}@email.com`,
         silla: n.silla,

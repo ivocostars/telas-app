@@ -38,7 +38,6 @@ export default function Espectadores() {
 
   const [formData, setFormData] = useState<EspectadorInput>({
     nombre: '',
-    apellido: '',
     dni: '',
     email: '',
     telefono: '',
