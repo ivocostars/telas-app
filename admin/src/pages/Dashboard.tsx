@@ -145,7 +145,7 @@ export default function Dashboard() {
               <tbody>
                 {stats.ultimos_ingresos.map((ing) => (
                   <tr key={ing.id}>
-                    <td>{ing.nombre} {ing.apellido}</td>
+                    <td>{ing.nombreCompleto}</td>
                     <td>{ing.dni}</td>
                     <td>
                       <span className={`badge ${ing.silla ? 'badge-success' : 'badge-muted'}`}>

@@ -37,7 +37,7 @@ export default function Espectadores() {
   const [showDeleteAll, setShowDeleteAll] = useState(false)
 
   const [formData, setFormData] = useState<EspectadorInput>({
-    nombre: '',
+    nombreCompleto: '',
     dni: '',
     email: '',
     telefono: '',
@@ -83,15 +83,14 @@ export default function Espectadores() {
 
   const openNew = () => {
     setEditing(null)
-    setFormData({ nombre: '', apellido: '', dni: '', email: '', telefono: '', silla: false, alumnaInvitada: '' })
+    setFormData({ nombreCompleto: '', dni: '', email: '', telefono: '', silla: false, alumnaInvitada: '' })
     setShowForm(true)
   }
 
   const openEdit = (e: Espectador) => {
     setEditing(e)
     setFormData({
-      nombre: e.nombre,
-      apellido: e.apellido,
+      nombreCompleto: e.nombreCompleto,
       dni: e.dni,
       email: e.email || '',
       telefono: e.telefono || '',
@@ -162,7 +161,7 @@ export default function Espectadores() {
     setShowQr(e)
     setQrDataUrl('')
     try {
-      const qrData = [e.qrHash, e.nombre, e.apellido, e.dni, e.alumnaInvitada || ''].join('|')
+      const qrData = [e.qrHash, e.nombreCompleto, e.dni, e.alumnaInvitada || ''].join('|')
       const url = await QRCode.toDataURL(qrData)
       setQrDataUrl(url)
     } catch {
@@ -185,8 +184,7 @@ export default function Espectadores() {
       const rows = res.data.map((e, i) => [
         '',
         i + 1,
-        e.nombre,
-        e.apellido,
+        e.nombreCompleto,
         e.dni,
         e.alumnaInvitada || '',
         e.silla ? 'SÍ' : 'NO',
@@ -218,7 +216,7 @@ export default function Espectadores() {
     if (!showQr) return
     downloadQr()
     if (showQr.email) {
-      const subject = encodeURIComponent(`Entrada - Acrobacia en Telas - ${showQr.nombre} ${showQr.apellido}`)
+      const subject = encodeURIComponent(`Entrada - Acrobacia en Telas - ${showQr.nombreCompleto}`)
       window.open(`mailto:${showQr.email}?subject=${subject}`, '_blank')
     }
   }
@@ -235,7 +233,7 @@ export default function Espectadores() {
         else if (digits.length >= 10) phone = '549' + digits
       }
       const msg = encodeURIComponent(
-        `🎟️ *Entrada - Telas*\n\n*Nombre:* ${showQr.nombre} ${showQr.apellido}\n*DNI:* ${showQr.dni}`
+        `🎟️ *Entrada - Telas*\n\n*Nombre:* ${showQr.nombreCompleto}\n*DNI:* ${showQr.dni}`
       )
       window.open(`https://wa.me/${phone}?text=${msg}`, '_blank')
     }
@@ -271,7 +269,7 @@ export default function Espectadores() {
           <input
             type="text"
             className="form-input search-input"
-            placeholder="Buscar por nombre, apellido o DNI..."
+            placeholder="Buscar por nombre o DNI..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
           />
@@ -322,8 +320,7 @@ export default function Espectadores() {
               <tbody>
                 {espectadores.map((esp) => (
                   <tr key={esp.id}>
-                    <td>{esp.nombre}</td>
-                    <td>{esp.apellido}</td>
+                    <td>{esp.nombreCompleto}</td>
                     <td>{esp.dni}</td>
                     <td>
                       {esp.alumnaInvitada ? (
@@ -374,18 +371,14 @@ export default function Espectadores() {
         <form onSubmit={handleSave} className="form">
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label" htmlFor="nombre">Nombre *</label>
-              <input id="nombre" className="form-input" required value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="apellido">Apellido *</label>
-              <input id="apellido" className="form-input" required value={formData.apellido} onChange={(e) => setFormData({ ...formData, apellido: e.target.value })} />
+              <label className="form-label" htmlFor="nombreCompleto">Nombre completo *</label>
+              <input id="nombreCompleto" className="form-input" required value={formData.nombreCompleto} onChange={(e) => setFormData({ ...formData, nombreCompleto: e.target.value })} />
             </div>
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label" htmlFor="dni">DNI *</label>
-              <input id="dni" className="form-input" required value={formData.dni} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} />
+              <label className="form-label" htmlFor="dni">DNI</label>
+              <input id="dni" className="form-input" value={formData.dni || ''} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} />
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="email">Email</label>
@@ -421,11 +414,11 @@ export default function Espectadores() {
         {showQr && (
           <div className="qr-modal-content">
             {qrDataUrl ? (
-              <img src={qrDataUrl} alt={`QR ${showQr.nombre}`} className="qr-image" />
+              <img src={qrDataUrl} alt={`QR ${showQr.nombreCompleto}`} className="qr-image" />
             ) : (
               <div className="loading-container"><div className="spinner" /><p>Generando QR...</p></div>
             )}
-            <p className="qr-name">{showQr.nombre} {showQr.apellido}</p>
+            <p className="qr-name">{showQr.nombreCompleto}</p>
             <p className="qr-dni">DNI: {showQr.dni}</p>
             {showQr.alumnaInvitada && <p className="qr-badge">🎓 {showQr.alumnaInvitada}</p>}
             <div className="qr-actions">
@@ -457,7 +450,7 @@ export default function Espectadores() {
         ) : (
           <div className="import-area">
             <div className="import-info">
-              <p className="import-format">Columnas: <code>nombre</code> <code>apellido</code> <code>dni</code> <code>email</code> <code>telefono</code> <code>silla</code> <code>alumna_invitada</code></p>
+              <p className="import-format">Columnas: <code>nombre</code> <code>dni</code> <code>email</code> <code>telefono</code> <code>silla</code> <code>alumna_invitada</code></p>
             </div>
             <div className="import-actions">
               <button className="btn btn-outline" onClick={downloadPlantilla}>📥 Descargar plantilla</button>
@@ -479,7 +472,7 @@ export default function Espectadores() {
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Confirmar eliminación">
         {deleteTarget && (
           <div className="confirm-content">
-            <p>¿Estás seguro de que querés eliminar a <strong>{deleteTarget.nombre} {deleteTarget.apellido}</strong> (DNI: {deleteTarget.dni})?</p>
+            <p>¿Estás seguro de que querés eliminar a <strong>{deleteTarget.nombreCompleto}</strong> (DNI: {deleteTarget.dni})?</p>
             <p className="confirm-warning">Esta acción no se puede deshacer.</p>
             <div className="form-actions">
               <button className="btn btn-outline" onClick={() => setDeleteTarget(null)}>Cancelar</button>

@@ -35,8 +35,7 @@ interface Props {
 }
 
 interface ScanHistoryItem {
-  nombre: string;
-  apellido: string;
+  nombreCompleto: string;
   dni: string;
   valido: boolean;
   timestamp: string;
@@ -120,12 +119,11 @@ export default function ScannerScreen({ navigation }: Props) {
     setScanned(true);
     setLastQrHash(raw);
 
-    // Parse QR data (format: hash|nombre|apellido|dni|alumna)
+    // Parse QR data (format: hash|nombreCompleto|dni|alumna)
     const parts = raw.split('|');
     const qrHash = parts[0];
     const qrData: ValidarQrResponse['espectador'] = parts.length >= 4 ? {
-      nombre: parts[1] || '',
-      apellido: parts[2] || '',
+      nombreCompleto: parts[1] || '',
       dni: parts[3] || '',
       silla: false,
       alumnaInvitada: parts[4] || null,
@@ -136,13 +134,13 @@ export default function ScannerScreen({ navigation }: Props) {
       if (res.valido) {
         showResult('valid', res.espectador);
         setScanHistory((prev) => [
-          { nombre: res.espectador?.nombre || '', apellido: res.espectador?.apellido || '', dni: res.espectador?.dni || '', valido: true, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
+          { nombreCompleto: res.espectador?.nombreCompleto || '', dni: res.espectador?.dni || '', valido: true, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
           ...prev.slice(0, 2),
         ]);
       } else if (res.motivo === 'QR ya utilizado') {
         showResult('rejected', res.espectador, res.primer_ingreso);
         setScanHistory((prev) => [
-          { nombre: res.espectador?.nombre || '', apellido: res.espectador?.apellido || '', dni: res.espectador?.dni || '', valido: false, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
+          { nombreCompleto: res.espectador?.nombreCompleto || '', dni: res.espectador?.dni || '', valido: false, timestamp: dayjs().format('HH:mm:ss') } as ScanHistoryItem,
           ...prev.slice(0, 2),
         ]);
       } else {
@@ -288,7 +286,7 @@ export default function ScannerScreen({ navigation }: Props) {
                 <>
                   <View style={styles.resultDivider} />
                   <Text style={styles.resultName}>
-                    {resultData.nombre} {resultData.apellido}
+                    {resultData.nombreCompleto}
                   </Text>
                   <Text style={styles.resultDni}>
                     DNI: {resultData.dni}
@@ -344,7 +342,7 @@ export default function ScannerScreen({ navigation }: Props) {
                 ]}
               />
               <Text style={styles.historyName}>
-                {item.nombre} {item.apellido}
+                {item.nombreCompleto}
               </Text>
               <Text style={styles.historyTime}>{item.timestamp}</Text>
             </View>

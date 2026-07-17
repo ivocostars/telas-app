@@ -28,8 +28,7 @@ interface Props {
 
 interface Spectator {
   id: number;
-  nombre: string;
-  apellido: string;
+  nombreCompleto: string;
   dni: string;
   alumnaInvitada: string | null;
   silla: boolean;
@@ -68,7 +67,7 @@ export default function BuscarScreen({ navigation }: Props) {
     return (
       <View style={styles.row}>
         <View style={styles.rowInfo}>
-          <Text style={styles.rowName}>{item.nombre} {item.apellido}</Text>
+          <Text style={styles.rowName}>{item.nombreCompleto}</Text>
           <Text style={styles.rowDni}>DNI: {item.dni}</Text>
           {item.alumnaInvitada && <Text style={styles.rowAlumna}>🎓 {item.alumnaInvitada}</Text>}
         </View>
@@ -93,7 +92,7 @@ export default function BuscarScreen({ navigation }: Props) {
       <View style={styles.searchRow}>
         <TextInput
           style={styles.input}
-          placeholder="Nombre, apellido o alumna..."
+          placeholder="Nombre o alumna..."
           placeholderTextColor={COLORS.textMuted}
           value={query}
           onChangeText={setQuery}

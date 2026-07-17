@@ -110,7 +110,7 @@ export default function DashboardScreen({ navigation }: Props) {
         </Text>
         <View style={styles.recentInfo}>
           <Text style={styles.recentName}>
-            {item.nombre} {item.apellido}
+            {item.nombreCompleto}
           </Text>
           <Text style={styles.recentScanner}>{item.scanner_nombre}</Text>
         </View>

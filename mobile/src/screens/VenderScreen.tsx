@@ -33,8 +33,7 @@ interface Props {
 }
 
 interface FormData {
-  nombre: string;
-  apellido: string;
+  nombreCompleto: string;
   dni: string;
   email: string;
   telefono: string;
@@ -44,8 +43,7 @@ interface FormData {
 
 interface TicketData {
   id: number;
-  nombre: string;
-  apellido: string;
+  nombreCompleto: string;
   dni: string;
   qrHash: string;
   email: string;
@@ -54,8 +52,7 @@ interface TicketData {
 
 export default function VenderScreen({ navigation }: Props) {
   const [form, setForm] = useState<FormData>({
-    nombre: '',
-    apellido: '',
+    nombreCompleto: '',
     dni: '',
     email: '',
     telefono: '',
@@ -71,8 +68,8 @@ export default function VenderScreen({ navigation }: Props) {
   }
 
   const isValid =
-    form.nombre.trim().length > 0 &&
-    form.apellido.trim().length > 0 &&
+    form.nombreCompleto.trim().length > 0 &&
+    form.nombreCompleto.trim().length > 0 &&
     form.dni.trim().length > 0;
 
   async function handleGenerate() {
@@ -80,8 +77,7 @@ export default function VenderScreen({ navigation }: Props) {
     setLoading(true);
     try {
       const data = await createEspectador({
-        nombre: form.nombre.trim(),
-        apellido: form.apellido.trim(),
+        nombreCompleto: form.nombreCompleto.trim(),
         dni: form.dni.trim(),
         email: form.email.trim() || undefined,
         telefono: form.telefono.trim() || undefined,
@@ -91,8 +87,7 @@ export default function VenderScreen({ navigation }: Props) {
       });
       setTicket({
         id: data.id,
-        nombre: form.nombre.trim(),
-        apellido: form.apellido.trim(),
+        nombreCompleto: form.nombreCompleto.trim(),
         dni: form.dni.trim(),
         qrHash: data.qrHash,
         email: form.email.trim(),
@@ -116,7 +111,7 @@ export default function VenderScreen({ navigation }: Props) {
       const uri = await captureImage();
       await Sharing.shareAsync(uri, {
         mimeType: 'image/png',
-        dialogTitle: `Entrada - ${ticket.nombre} ${ticket.apellido}`,
+        dialogTitle: `Entrada - ${ticket.nombreCompleto}`,
       });
     } catch (e: any) {
       Alert.alert('Error', e.message || 'No se pudo compartir');
@@ -143,7 +138,7 @@ export default function VenderScreen({ navigation }: Props) {
       else if (digits.length >= 10) phone = '549' + digits;
 
       const message = encodeURIComponent(
-        `🎟️ *Entrada - Telas*\n\n*Nombre:* ${ticket.nombre} ${ticket.apellido}\n*DNI:* ${ticket.dni}`
+        `🎟️ *Entrada - Telas*\n\n*Nombre:* ${ticket.nombreCompleto}\n*DNI:* ${ticket.dni}`
       );
       Linking.openURL(`https://wa.me/${phone}?text=${message}`).catch(() =>
         Alert.alert('QR guardado', `El QR se guardó en la galería. Abrí WhatsApp y adjuntalo manualmente.`)
@@ -165,7 +160,7 @@ export default function VenderScreen({ navigation }: Props) {
       const uri = await captureImage();
       await MediaLibrary.createAssetAsync(uri);
 
-      const subject = encodeURIComponent(`Entrada - Acrobacia en Telas - ${ticket.nombre} ${ticket.apellido}`);
+      const subject = encodeURIComponent(`Entrada - Acrobacia en Telas - ${ticket.nombreCompleto}`);
       Linking.openURL(`mailto:${ticket.email}?subject=${subject}`).catch(() =>
         Alert.alert('QR guardado', `El QR se guardó en la galería. Abrí tu correo y adjuntalo manualmente.`)
       );
@@ -176,8 +171,7 @@ export default function VenderScreen({ navigation }: Props) {
 
   function handleClear() {
     setForm({
-      nombre: '',
-      apellido: '',
+      nombreCompleto: '',
       dni: '',
       email: '',
       telefono: '',
@@ -206,7 +200,7 @@ export default function VenderScreen({ navigation }: Props) {
               <QRCode value={ticket.qrHash} size={280} backgroundColor="white" color="#000" />
             </View>
             <Text style={styles.captureName}>
-              {ticket.nombre.toUpperCase()} {ticket.apellido.toUpperCase()}
+              {ticket.nombreCompleto.toUpperCase()}
             </Text>
             <Text style={styles.captureDni}>DNI: {ticket.dni}</Text>
           </View>
@@ -226,16 +220,16 @@ export default function VenderScreen({ navigation }: Props) {
             style={styles.input}
             placeholder="Nombre *"
             placeholderTextColor={COLORS.textMuted}
-            value={form.nombre}
-            onChangeText={(v) => updateField('nombre', v)}
+            value={form.nombreCompleto}
+            onChangeText={(v) => updateField('nombreCompleto', v)}
             autoCapitalize="words"
           />
           <TextInput
             style={styles.input}
             placeholder="Apellido *"
             placeholderTextColor={COLORS.textMuted}
-            value={form.apellido}
-            onChangeText={(v) => updateField('apellido', v)}
+            value={form.nombreCompleto}
+            onChangeText={(v) => updateField('nombreCompleto', v)}
             autoCapitalize="words"
           />
           <TextInput
@@ -304,7 +298,7 @@ export default function VenderScreen({ navigation }: Props) {
               <QRCode value={ticket.qrHash} size={200} backgroundColor="white" color={COLORS.bg} />
             </View>
 
-            <Text style={styles.ticketName}>{ticket.nombre} {ticket.apellido}</Text>
+            <Text style={styles.ticketName}>{ticket.nombreCompleto}</Text>
             <Text style={styles.ticketDni}>DNI: {ticket.dni}</Text>
 
             <View style={styles.actionRow}>
