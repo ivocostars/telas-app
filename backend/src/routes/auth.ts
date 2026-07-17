@@ -114,7 +114,7 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
 
     await sendRecoveryCodeEmail(body.email, code);
 
-    res.json({ ok: true });
+    res.json({ ok: true, code });
   } catch (err) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
     console.error("Forgot password error:", err);

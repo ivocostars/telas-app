@@ -128,7 +128,7 @@ export async function sendWelcomeEmail(email: string, password: string) {
   await trySendEmail(email, "Tus credenciales de acceso", html);
 }
 
-export async function sendRecoveryCodeEmail(email: string, code: string) {
+export async function sendRecoveryCodeEmail(email: string, code: string): Promise<boolean> {
   const html = `
 <!DOCTYPE html>
 <html>
@@ -155,10 +155,10 @@ export async function sendRecoveryCodeEmail(email: string, code: string) {
   </div>
 </body>
 </html>`;
-  await trySendEmail(email, "Código de recuperación de contraseña", html);
+  return trySendEmail(email, "Código de recuperación de contraseña", html);
 }
 
-async function trySendEmail(to: string, subject: string, html: string) {
+async function trySendEmail(to: string, subject: string, html: string): Promise<boolean> {
   const config = getSmtpConfig();
   try {
     const transporter = nodemailer.createTransport({
@@ -174,11 +174,13 @@ async function trySendEmail(to: string, subject: string, html: string) {
       html,
     });
     console.log(`Email sent to ${to}: ${subject}`);
+    return true;
   } catch (err) {
     console.error(`Failed to send email to ${to}. SMTP not configured?`);
     console.log(`--- EMAIL TO ${to} ---`);
     console.log(`Subject: ${subject}`);
     console.log(`Body: ${html}`);
     console.log(`--- END EMAIL ---`);
+    return false;
   }
 }
