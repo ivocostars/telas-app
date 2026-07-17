@@ -34,23 +34,15 @@ app.use("/api/validar", validarRouter);
 app.use("/api/salida", salidaRouter);
 app.use("/api/estadisticas", estadisticasRouter);
 
-// GET /api/apk/descargar - descarga protegida
+// GET /api/apk/descargar - descarga protegida (redirige al archivo estático)
 app.get("/api/apk/descargar", async (req, res) => {
-  const apkPath = process.env.APK_FILE_PATH || "/home/ivan/apk/telas-app.apk";
-
   let authorized = false;
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) { try { jwt.verify(authHeader.slice(7), JWT_SECRET); authorized = true; } catch {} }
   const token = req.query.token as string | undefined;
   if (token) { try { const p = jwt.verify(token, JWT_SECRET) as any; authorized = p.purpose === "apk_download"; } catch {} }
   if (!authorized) { res.status(401).json({ error: "No autorizado" }); return; }
-
-  res.type("application/vnd.android.package-archive").download(apkPath, "telas-app.apk", {
-    headers: {
-      "X-Accel-Buffering": "no",
-      "Cache-Control": "no-cache, no-store, must-revalidate",
-    },
-  });
+  res.redirect("/telas-app.apk");
 });
 
 app.get("/api/health", (_req, res) => {
