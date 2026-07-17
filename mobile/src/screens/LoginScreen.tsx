@@ -90,7 +90,10 @@ export default function LoginScreen({ navigation }: Props) {
       const data = await res.json();
       if (data.ok) {
         setRecStep('reset');
-        setRecMsg('📧 Si el email existe, recibiste un código');
+        const msg = data.code
+          ? `📧 Código: ${data.code}`
+          : '📧 Si el email existe, recibiste un código';
+        setRecMsg(msg);
       } else {
         setRecMsg(data.error || 'Error');
       }
