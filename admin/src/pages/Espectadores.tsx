@@ -33,6 +33,8 @@ export default function Espectadores() {
   const [showForm, setShowForm] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [showQr, setShowQr] = useState<Espectador | null>(null)
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [emailResult, setEmailResult] = useState<'success' | 'error' | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Espectador | null>(null)
   const [showDeleteAll, setShowDeleteAll] = useState(false)
@@ -215,11 +217,15 @@ export default function Espectadores() {
 
   const handleSendEmail = async () => {
     if (!showQr) return
+    setSendingEmail(true)
+    setEmailResult(null)
     try {
       await sendEmail(showQr.id)
-      addToast('Email enviado correctamente', 'success')
+      setEmailResult('success')
     } catch {
-      addToast('Error al enviar el email', 'error')
+      setEmailResult('error')
+    } finally {
+      setSendingEmail(false)
     }
   }
 
@@ -411,7 +417,7 @@ export default function Espectadores() {
       </Modal>
 
       {/* QR */}
-      <Modal open={!!showQr} onClose={() => setShowQr(null)} title="Código QR" large>
+      <Modal open={!!showQr} onClose={() => { if (!sendingEmail) setShowQr(null); setEmailResult(null) }} title="Código QR" large>
         {showQr && (
           <div className="qr-modal-content">
             {qrDataUrl ? (
@@ -424,10 +430,25 @@ export default function Espectadores() {
             {showQr.alumnaInvitada && <p className="qr-badge">🎓 {showQr.alumnaInvitada}</p>}
             <div className="qr-actions">
               <button className="btn btn-primary" onClick={downloadQr}>Descargar QR</button>
-              {showQr.email && <button className="btn btn-outline" onClick={handleSendEmail}>Enviar por Email</button>}
+              {showQr.email && <button className="btn btn-outline" onClick={handleSendEmail} disabled={sendingEmail}>Enviar por Email</button>}
               {showQr.telefono && <button className="btn btn-outline" onClick={shareWhatsApp}>Compartir WhatsApp</button>}
               {showQr.ingresado && <button className="btn btn-outline" onClick={() => { handleMarcarSalida(showQr.id); setShowQr(null) }}>🚪 Marcar salida</button>}
             </div>
+
+            {sendingEmail && (
+              <div className="qr-email-overlay">
+                <div className="spinner" />
+                <p>Enviando mail...</p>
+              </div>
+            )}
+
+            {emailResult && (
+              <div className={`qr-email-result qr-email-${emailResult}`}>
+                <span className="qr-email-icon">{emailResult === 'success' ? '✓' : '✕'}</span>
+                <p>{emailResult === 'success' ? 'Email enviado correctamente' : 'Error al enviar el email'}</p>
+                <button className="btn btn-outline" onClick={() => setEmailResult(null)}>Cerrar</button>
+              </div>
+            )}
           </div>
         )}
       </Modal>
