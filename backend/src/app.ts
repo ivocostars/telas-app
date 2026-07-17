@@ -54,8 +54,8 @@ app.get("/api/apk/descargar", async (req, res) => {
     .card { background: #1A1530; border-radius: 24px; padding: 40px; max-width: 400px; border: 1px solid #2D2A4A; }
     h1 { font-size: 24px; margin: 0 0 8px; color: #D4A847; }
     p { color: #9CA3AF; margin: 8px 0 24px; font-size: 15px; line-height: 1.5; }
-    .btn { display: inline-block; background: #6C3CB5; color: #fff; text-decoration: none; padding: 16px 32px; border-radius: 14px; font-size: 18px; font-weight: 700; }
-    .btn:hover { background: #5a2d9e; }
+    .btn { display: block; background: #6C3CB5; color: #fff; text-decoration: none; padding: 16px 32px; border-radius: 14px; font-size: 18px; font-weight: 700; margin: 12px 0; }
+    .btn2 { display: block; background: transparent; color: #D4A847; text-decoration: none; padding: 14px 32px; border-radius: 14px; font-size: 15px; font-weight: 600; border: 1px solid #D4A847; margin: 12px 0; }
     .note { margin-top: 16px; font-size: 13px; color: #6B7280; }
   </style>
 </head>
@@ -64,7 +64,8 @@ app.get("/api/apk/descargar", async (req, res) => {
     <h1>📲 Telas App</h1>
     <p>Descargá la aplicación para escanear los códigos QR de las entradas.</p>
     <a class="btn" href="/telas-app.apk" download>📥 Descargar APK</a>
-    <p class="note">Si la descarga no inicia, mantené presionado el botón y elegí "Guardar enlace".</p>
+    <a class="btn2" href="/telas-app.apk" target="_blank">🌐 Abrir en navegador externo</a>
+    <p class="note">Si la descarga no inicia, usá el botón "Abrir en navegador externo" o mantené presionado "Descargar APK" y elegí "Guardar enlace".</p>
   </div>
 </body>
 </html>`);
