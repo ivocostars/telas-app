@@ -112,7 +112,10 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
     await db.delete(recoveryCodes).where(and(eq(recoveryCodes.email, body.email), eq(recoveryCodes.usado, false)));
     await db.insert(recoveryCodes).values({ email: body.email, code, expiresEn: expires });
 
-    await sendRecoveryCodeEmail(body.email, code);
+    console.log(`Sending recovery code to ${body.email}...`);
+    const start = Date.now();
+    const sent = await sendRecoveryCodeEmail(body.email, code);
+    console.log(`Recovery email sent=${sent} in ${Date.now() - start}ms`);
 
     res.json({ ok: true });
   } catch (err) {
