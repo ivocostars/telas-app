@@ -52,7 +52,7 @@ export default function Login() {
       const data = await res.json()
       if (data.ok) {
         setRecStep('reset')
-        setRecMsg(data.code ? `📧 Código: ${data.code}` : '📧 Si el email existe, recibiste un código')
+        setRecMsg('📧 Revisá tu email. Llegó un código de 6 dígitos.')
       } else {
         setRecMsg(data.error || 'Error')
       }

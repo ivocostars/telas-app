@@ -104,7 +104,7 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
     const body = schema.parse(req.body);
 
     const user = await db.select().from(usuarios).where(eq(usuarios.email, body.email)).limit(1).then((r) => r[0]);
-    if (!user) { res.json({ ok: true }); return; } // No revelar si existe
+    if (!user) { res.status(404).json({ error: "No existe una cuenta con ese email" }); return; }
 
     const code = crypto.randomInt(100000, 999999).toString();
     const expires = new Date(Date.now() + 15 * 60 * 1000);
@@ -114,7 +114,7 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
 
     await sendRecoveryCodeEmail(body.email, code);
 
-    res.json({ ok: true, code });
+    res.json({ ok: true });
   } catch (err) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
     console.error("Forgot password error:", err);
