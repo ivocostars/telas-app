@@ -40,7 +40,7 @@ app.get("/api/apk/descargar", async (req, res) => {
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) { try { jwt.verify(authHeader.slice(7), JWT_SECRET); authorized = true; } catch {} }
   const token = req.query.token as string | undefined;
-  if (token) { try { const p = jwt.verify(token, JWT_SECRET) as any; authorized = p.purpose === "apk_download"; } catch {} }
+  if (token) { try { jwt.verify(token, JWT_SECRET); authorized = true; } catch {} }
   if (!authorized) { res.status(401).json({ error: "No autorizado" }); return; }
   res.redirect("/telas-app.apk");
 });
