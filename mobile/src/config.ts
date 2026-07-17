@@ -1,4 +1,4 @@
-export const API_URL = 'http://192.168.1.200:16728';
+export const API_URL = 'https://telas.costarojas.com';
 
 export const COLORS = {
   bg: '#0D0A1A',

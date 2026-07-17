@@ -1,0 +1,7 @@
+tunnel: telas-app
+credentials-file: /home/ivan/.cloudflared/telas-app.json
+
+ingress:
+  - hostname: telas.costarojas.com
+    service: http://localhost:16728
+  - service: http_status:404
