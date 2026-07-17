@@ -16,7 +16,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../config';
 import { login } from '../services/api';
-import { saveToken, getServerUrl, saveServerUrl } from '../services/storage';
+import { saveToken } from '../services/storage';
 import { useAppStore } from '../store';
 import { RootStackParamList } from '../types';
 
@@ -36,18 +36,12 @@ export default function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const setToken = useAppStore((s) => s.setToken);
 
-  const [serverModalVisible, setServerModalVisible] = useState(false);
-  const [serverInput, setServerInput] = useState('');
-  const [serverUrl, setServerUrlState] = useState('');
-  const [testing, setTesting] = useState(false);
-
   const fadeTitle = useRef(new Animated.Value(0)).current;
   const fadeSubtitle = useRef(new Animated.Value(0)).current;
   const fadeForm = useRef(new Animated.Value(0)).current;
   const fadeButton = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    loadServerUrl();
     Animated.sequence([
       Animated.timing(fadeTitle, {
         toValue: 1,
@@ -71,41 +65,6 @@ export default function LoginScreen({ navigation }: Props) {
       }),
     ]).start();
   }, []);
-
-  async function loadServerUrl() {
-    const url = await getServerUrl();
-    if (url) setServerUrlState(url);
-  }
-
-  function openServerModal() {
-    setServerInput(serverUrl);
-    setServerModalVisible(true);
-  }
-
-  async function handleTestConnection() {
-    const url = serverInput.trim().replace(/\/+$/, '');
-    if (!url) {
-      Alert.alert('Error', 'Ingresá la URL del servidor');
-      return;
-    }
-    setTesting(true);
-    try {
-      const res = await fetch(`${url}/health`);
-      const data = await res.json();
-      if (data.status === 'ok') {
-        await saveServerUrl(url);
-        setServerUrlState(url);
-        Alert.alert('Conexión exitosa', `Servidor: ${url}\nTimezone: ${data.tz || 'N/A'}`);
-        setServerModalVisible(false);
-      } else {
-        Alert.alert('Error', 'Respuesta inesperada del servidor');
-      }
-    } catch {
-      Alert.alert('Error', 'No se pudo conectar al servidor.\nVerificá la URL y que el servidor esté corriendo.');
-    } finally {
-      setTesting(false);
-    }
-  }
 
   async function handleLogin() {
     if (!email.trim() || !password.trim()) {
@@ -178,56 +137,8 @@ export default function LoginScreen({ navigation }: Props) {
               <Text style={styles.buttonText}>Iniciar Sesión</Text>
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.serverLink} onPress={openServerModal}>
-            <Text style={styles.serverLinkText}>
-              ⚙️ Servidor: {serverUrl ? serverUrl.replace(/^https?:\/\//, '').replace(/\/api$/, '') : 'Configurar'}
-            </Text>
-          </TouchableOpacity>
         </Animated.View>
       </View>
-
-      <Modal
-        visible={serverModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setServerModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Configurar Servidor</Text>
-            <Text style={styles.modalSubtitle}>
-              Ingresá la URL del backend (ej: http://192.168.1.100:4000/api)
-            </Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="http://192.168.1.100:4000/api"
-              placeholderTextColor={COLORS.textMuted}
-              value={serverInput}
-              onChangeText={setServerInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-            />
-            <TouchableOpacity
-              style={[styles.modalButton, testing && styles.modalButtonDisabled]}
-              onPress={handleTestConnection}
-              disabled={testing}
-            >
-              {testing ? (
-                <ActivityIndicator color={COLORS.text} />
-              ) : (
-                <Text style={styles.modalButtonText}>Probar Conexión</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalCancel}
-              onPress={() => setServerModalVisible(false)}
-            >
-              <Text style={styles.modalCancelText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -312,76 +223,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 1,
-  },
-  serverLink: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  serverLinkText: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  modalContent: {
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 24,
-    padding: 28,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.text,
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  modalInput: {
-    backgroundColor: COLORS.bg,
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: COLORS.text,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  modalButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  modalButtonDisabled: {
-    opacity: 0.5,
-  },
-  modalButtonText: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  modalCancel: {
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  modalCancelText: {
-    color: COLORS.textMuted,
-    fontSize: 14,
   },
 });

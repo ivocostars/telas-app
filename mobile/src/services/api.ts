@@ -1,5 +1,5 @@
-import { API_URL as FALLBACK_URL } from '../config';
-import { getToken, getServerUrl } from './storage';
+import { API_URL } from '../config';
+import { getToken } from './storage';
 
 class ApiRequestError extends Error {
   status: number;
@@ -10,17 +10,11 @@ class ApiRequestError extends Error {
   }
 }
 
-async function getBaseUrl(): Promise<string> {
-  const stored = await getServerUrl();
-  return stored || FALLBACK_URL;
-}
-
 async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const token = await getToken();
-  const baseUrl = await getBaseUrl();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -30,7 +24,7 @@ async function apiFetch<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = `${baseUrl}${endpoint}`;
+  const url = `${API_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
