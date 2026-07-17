@@ -206,14 +206,6 @@ export default function VenderScreen({ navigation }: Props) {
           />
           <TextInput
             style={styles.input}
-            placeholder="Apellido *"
-            placeholderTextColor={COLORS.textMuted}
-            value={form.nombreCompleto}
-            onChangeText={(v) => updateField('nombreCompleto', v)}
-            autoCapitalize="words"
-          />
-          <TextInput
-            style={styles.input}
             placeholder="Email"
             placeholderTextColor={COLORS.textMuted}
             value={form.email}
