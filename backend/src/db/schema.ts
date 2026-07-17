@@ -10,8 +10,9 @@ import {
 export const usuarios = pgTable("usuarios", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
-  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }),
   rol: varchar("rol", { length: 20 }).notNull().$type<"admin" | "scanner">(),
+  pendingSetup: boolean("pending_setup").notNull().default(false),
   creadoEn: timestamp("creado_en", { withTimezone: true })
     .notNull()
     .defaultNow(),

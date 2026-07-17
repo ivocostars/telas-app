@@ -23,7 +23,6 @@ export function Layout() {
   const [showUsers, setShowUsers] = useState(false)
   const [users, setUsers] = useState<{ id: number; email: string; rol: string }[]>([])
   const [newEmail, setNewEmail] = useState('')
-  const [newPass, setNewPass] = useState('')
   const [newRol, setNewRol] = useState<'admin' | 'scanner'>('scanner')
   const [creating, setCreating] = useState(false)
 
@@ -59,13 +58,12 @@ export function Layout() {
   }
 
   const handleCreateUser = async () => {
-    if (!newEmail || !newPass) return
+    if (!newEmail) return
     setCreating(true)
     try {
-      const res = await createUsuario(newEmail, newPass, newRol)
-      addToast(`Usuario creado. Email enviado a ${newEmail}`, 'success')
+      const res = await createUsuario(newEmail, newRol)
+      addToast(`Invitación enviada a ${newEmail}`, 'success')
       setNewEmail('')
-      setNewPass('')
       const data = await getUsuarios()
       setUsers(data)
     } catch (err) {
@@ -160,24 +158,19 @@ export function Layout() {
               <input type="email" className="form-input" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="user@email.com" />
             </div>
             <div className="form-group">
-              <label className="form-label">Contraseña</label>
-              <input type="password" className="form-input" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Mínimo 6 caracteres" />
-            </div>
-          </div>
-          <div className="form-row" style={{ marginTop: 8 }}>
-            <div className="form-group">
               <label className="form-label">Rol</label>
               <select className="form-input" value={newRol} onChange={(e) => setNewRol(e.target.value as 'admin' | 'scanner')}>
                 <option value="scanner">Scanner</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <div className="form-group" style={{ justifyContent: 'flex-end', display: 'flex' }}>
-              <button className="btn btn-primary" onClick={handleCreateUser} disabled={creating} style={{ marginTop: 22 }}>
-                {creating ? 'Creando...' : 'Crear usuario'}
-              </button>
-            </div>
           </div>
+          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: -8, marginBottom: 8 }}>
+            Se enviará un código de acceso por email para que configure su contraseña.
+          </p>
+          <button className="btn btn-primary" onClick={handleCreateUser} disabled={creating || !newEmail.trim()}>
+            {creating ? 'Enviando...' : 'Crear usuario'}
+          </button>
         </div>
         <div>
           <h3 style={{ fontSize: '0.95rem', marginBottom: 12, color: 'var(--color-text)' }}>Usuarios existentes</h3>

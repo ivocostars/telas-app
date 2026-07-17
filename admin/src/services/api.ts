@@ -181,10 +181,10 @@ export function getUsuarios(): Promise<{ id: number; email: string; rol: string 
   return request('/auth/usuarios')
 }
 
-export function createUsuario(email: string, password: string, rol: string): Promise<{ id: number; email: string; rol: string }> {
+export function createUsuario(email: string, rol: string): Promise<{ id: number; email: string; rol: string }> {
   return request('/auth/usuarios', {
     method: 'POST',
-    body: JSON.stringify({ email, password, rol }),
+    body: JSON.stringify({ email, rol }),
   })
 }
 

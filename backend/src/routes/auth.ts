@@ -7,7 +7,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { usuarios, recoveryCodes } from "../db/schema.js";
 import { JWT_SECRET, authenticate, requireAdmin } from "../middleware/auth.js";
-import { sendWelcomeEmail, sendRecoveryCodeEmail } from "../services/email.js";
+import { sendSetupCodeEmail, sendRecoveryCodeEmail } from "../services/email.js";
 
 const router = Router();
 
@@ -21,7 +21,8 @@ router.post("/login", async (req: Request, res: Response) => {
     const body = loginSchema.parse(req.body);
     const user = await db.select().from(usuarios).where(eq(usuarios.email, body.email)).limit(1).then((rows) => rows[0]);
     if (!user) { res.status(401).json({ error: "Credenciales inválidas" }); return; }
-    const valid = await bcrypt.compare(body.password, user.passwordHash);
+    if (user.pendingSetup || !user.passwordHash) { res.status(401).json({ error: "Debés configurar tu contraseña primero. Usá la opción 'Olvidaste tu contraseña' para recibir un código por email." }); return; }
+    const valid = await bcrypt.compare(body.password, user.passwordHash!);
     if (!valid) { res.status(401).json({ error: "Credenciales inválidas" }); return; }
     const token = jwt.sign({ id: user.id, email: user.email, rol: user.rol }, JWT_SECRET, { expiresIn: (process.env.JWT_EXPIRES_IN || "24h") as SignOptions["expiresIn"] });
     res.json({ token, user: { id: user.id, email: user.email, rol: user.rol } });
@@ -39,10 +40,10 @@ router.put("/password", authenticate, async (req: Request, res: Response) => {
     const body = schema.parse(req.body);
     const user = await db.select().from(usuarios).where(eq(usuarios.id, req.user!.id)).limit(1).then((r) => r[0]);
     if (!user) { res.status(404).json({ error: "Usuario no encontrado" }); return; }
-    const valid = await bcrypt.compare(body.currentPassword, user.passwordHash);
+    const valid = await bcrypt.compare(body.currentPassword, user.passwordHash!);
     if (!valid) { res.status(400).json({ error: "La contraseña actual no es correcta" }); return; }
     const hash = await bcrypt.hash(body.newPassword, 10);
-    await db.update(usuarios).set({ passwordHash: hash }).where(eq(usuarios.id, user.id));
+    await db.update(usuarios).set({ passwordHash: hash, pendingSetup: false }).where(eq(usuarios.id, user.id));
     res.json({ ok: true });
   } catch (err) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
@@ -54,7 +55,7 @@ router.put("/password", authenticate, async (req: Request, res: Response) => {
 // GET /api/auth/usuarios
 router.get("/usuarios", authenticate, requireAdmin, async (_req: Request, res: Response) => {
   try {
-    const rows = await db.select({ id: usuarios.id, email: usuarios.email, rol: usuarios.rol }).from(usuarios).orderBy(desc(usuarios.creadoEn));
+    const rows = await db.select({ id: usuarios.id, email: usuarios.email, rol: usuarios.rol, pendingSetup: usuarios.pendingSetup }).from(usuarios).orderBy(desc(usuarios.creadoEn));
     res.json(rows);
   } catch (err) {
     console.error("Error listing users:", err);
@@ -62,18 +63,22 @@ router.get("/usuarios", authenticate, requireAdmin, async (_req: Request, res: R
   }
 });
 
-// POST /api/auth/usuarios - crear usuario + enviar email
+// POST /api/auth/usuarios - crear usuario SIN password, envía código por email
 router.post("/usuarios", authenticate, requireAdmin, async (req: Request, res: Response) => {
   try {
     const schema = z.object({
       email: z.string().email("Email inválido"),
-      password: z.string().min(8, "Mínimo 8 caracteres").regex(/[!@#$%^&*(),.?":{}|<>]/, "Debe contener al menos un carácter especial"),
       rol: z.enum(["admin", "scanner"]),
     });
     const body = schema.parse(req.body);
-    const hash = await bcrypt.hash(body.password, 10);
-    const inserted = await db.insert(usuarios).values({ email: body.email, passwordHash: hash, rol: body.rol }).returning({ id: usuarios.id, email: usuarios.email, rol: usuarios.rol });
-    sendWelcomeEmail(body.email, body.password);
+    const inserted = await db.insert(usuarios).values({ email: body.email, rol: body.rol, pendingSetup: true }).returning({ id: usuarios.id, email: usuarios.email, rol: usuarios.rol });
+
+    const code = crypto.randomInt(100000, 999999).toString();
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
+    await db.delete(recoveryCodes).where(and(eq(recoveryCodes.email, body.email), eq(recoveryCodes.usado, false)));
+    await db.insert(recoveryCodes).values({ email: body.email, code, expiresEn: expires });
+
+    await sendSetupCodeEmail(body.email, code);
     res.status(201).json({ ...inserted[0], emailSent: true });
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
@@ -97,36 +102,8 @@ router.delete("/usuarios/:id", authenticate, requireAdmin, async (req: Request, 
   }
 });
 
-// POST /api/auth/forgot-password - enviar código al email
-router.post("/forgot-password", async (req: Request, res: Response) => {
-  try {
-    const schema = z.object({ email: z.string().email("Email inválido") });
-    const body = schema.parse(req.body);
-
-    const user = await db.select().from(usuarios).where(eq(usuarios.email, body.email)).limit(1).then((r) => r[0]);
-    if (!user) { res.status(404).json({ error: "No existe una cuenta con ese email" }); return; }
-
-    const code = crypto.randomInt(100000, 999999).toString();
-    const expires = new Date(Date.now() + 15 * 60 * 1000);
-
-    await db.delete(recoveryCodes).where(and(eq(recoveryCodes.email, body.email), eq(recoveryCodes.usado, false)));
-    await db.insert(recoveryCodes).values({ email: body.email, code, expiresEn: expires });
-
-    console.log(`Sending recovery code to ${body.email}...`);
-    const start = Date.now();
-    const sent = await sendRecoveryCodeEmail(body.email, code);
-    console.log(`Recovery email sent=${sent} in ${Date.now() - start}ms`);
-
-    res.json({ ok: true });
-  } catch (err) {
-    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
-    console.error("Forgot password error:", err);
-    res.status(500).json({ error: "Error interno del servidor" });
-  }
-});
-
-// POST /api/auth/reset-password - validar código y cambiar clave
-router.post("/reset-password", async (req: Request, res: Response) => {
+// POST /api/auth/setup-password - primer ingreso con código
+router.post("/setup-password", async (req: Request, res: Response) => {
   try {
     const schema = z.object({
       email: z.string().email("Email inválido"),
@@ -146,9 +123,52 @@ router.post("/reset-password", async (req: Request, res: Response) => {
     if (new Date() > record.expiresEn) { res.status(401).json({ error: "Código expirado" }); return; }
 
     const hash = await bcrypt.hash(body.newPassword, 10);
-    await db.update(usuarios).set({ passwordHash: hash }).where(eq(usuarios.email, body.email));
+    await db.update(usuarios).set({ passwordHash: hash, pendingSetup: false }).where(eq(usuarios.email, body.email));
     await db.update(recoveryCodes).set({ usado: true }).where(eq(recoveryCodes.id, record.id));
 
+    res.json({ ok: true });
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
+    console.error("Setup password error:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// POST /api/auth/forgot-password
+router.post("/forgot-password", async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({ email: z.string().email("Email inválido") });
+    const body = schema.parse(req.body);
+    const user = await db.select().from(usuarios).where(eq(usuarios.email, body.email)).limit(1).then((r) => r[0]);
+    if (!user) { res.status(404).json({ error: "No existe una cuenta con ese email" }); return; }
+    const code = crypto.randomInt(100000, 999999).toString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
+    await db.delete(recoveryCodes).where(and(eq(recoveryCodes.email, body.email), eq(recoveryCodes.usado, false)));
+    await db.insert(recoveryCodes).values({ email: body.email, code, expiresEn: expires });
+    await sendRecoveryCodeEmail(body.email, code);
+    res.json({ ok: true });
+  } catch (err) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
+    console.error("Forgot password error:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post("/reset-password", async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      email: z.string().email("Email inválido"),
+      code: z.string().min(1, "Código requerido"),
+      newPassword: z.string().min(8, "Mínimo 8 caracteres").regex(/[!@#$%^&*(),.?":{}|<>]/, "Debe contener al menos un carácter especial"),
+    });
+    const body = schema.parse(req.body);
+    const record = await db.select().from(recoveryCodes).where(and(eq(recoveryCodes.email, body.email), eq(recoveryCodes.code, body.code), eq(recoveryCodes.usado, false))).limit(1).then((r) => r[0]);
+    if (!record) { res.status(401).json({ error: "Código inválido o expirado" }); return; }
+    if (new Date() > record.expiresEn) { res.status(401).json({ error: "Código expirado" }); return; }
+    const hash = await bcrypt.hash(body.newPassword, 10);
+    await db.update(usuarios).set({ passwordHash: hash, pendingSetup: false }).where(eq(usuarios.email, body.email));
+    await db.update(recoveryCodes).set({ usado: true }).where(eq(recoveryCodes.id, record.id));
     res.json({ ok: true });
   } catch (err) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
