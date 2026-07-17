@@ -20,7 +20,6 @@ export const usuarios = pgTable("usuarios", {
 export const espectadores = pgTable("espectadores", {
   id: serial("id").primaryKey(),
   nombreCompleto: varchar("nombre_completo", { length: 200 }).notNull(),
-  dni: varchar("dni", { length: 15 }).unique(),
   email: varchar("email", { length: 255 }),
   telefono: varchar("telefono", { length: 30 }),
   silla: boolean("silla").notNull().default(false),
