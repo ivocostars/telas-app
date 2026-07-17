@@ -158,7 +158,12 @@ export async function sendRecoveryCodeEmail(email: string, code: string): Promis
   return trySendEmail(email, "Código de recuperación de contraseña", html);
 }
 
-export async function sendSetupCodeEmail(email: string, code: string): Promise<boolean> {
+export async function sendSetupCodeEmail(email: string, code: string, downloadToken?: string): Promise<boolean> {
+  const apiUrl = process.env.API_URL || "https://telas.costarojas.com";
+  const apkLink = downloadToken
+    ? `${apiUrl}/api/apk/descargar?token=${encodeURIComponent(downloadToken)}`
+    : undefined;
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -169,6 +174,8 @@ export async function sendSetupCodeEmail(email: string, code: string): Promise<b
     .container { max-width: 600px; margin: 0 auto; padding: 24px; }
     h1 { color: #6C3CB5; font-size: 22px; }
     .code { background: #6C3CB5; color: #fff; padding: 16px; border-radius: 8px; margin: 16px 0; text-align: center; font-size: 28px; letter-spacing: 4px; font-weight: bold; }
+    .btn { display: inline-block; background: #6C3CB5; color: #fff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 16px; font-weight: bold; margin: 16px 0; }
+    .btn:hover { background: #5a2d9e; }
     .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 12px; color: #999; }
   </style>
 </head>
@@ -180,6 +187,17 @@ export async function sendSetupCodeEmail(email: string, code: string): Promise<b
     <div class="code">${code}</div>
     <p>Este código expira en <strong>7 días</strong>.</p>
     <p>Ingresá al panel en <a href="https://telas.costarojas.com">telas.costarojas.com</a>, andá a <strong>¿Olvidaste tu contraseña?</strong> e ingresá el código junto con tu nueva contraseña.</p>
+
+    ${apkLink ? `
+    <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+    <h2>📱 Descargá la app para escanear QR</h2>
+    <p>Si vas a usar el rol de <strong>scanner</strong>, descargá la app mobile:</p>
+    <p style="text-align: center;">
+      <a href="${apkLink}" class="btn">📲 Descargar App Android</a>
+    </p>
+    <p style="font-size: 13px; color: #888;">El link expira en 7 días.</p>
+    ` : ""}
+
     <div class="footer">
       <p>Acrobacia en Telas — Sistema de Control de Entradas</p>
     </div>

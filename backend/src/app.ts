@@ -10,6 +10,9 @@ import validarRouter from "./routes/validar.js";
 import salidaRouter from "./routes/salida.js";
 import estadisticasRouter from "./routes/estadisticas.js";
 
+import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "./middleware/auth.js";
+
 const app = express();
 
 app.use(helmet());
@@ -30,6 +33,28 @@ app.use("/api/espectadores", espectadoresRouter);
 app.use("/api/validar", validarRouter);
 app.use("/api/salida", salidaRouter);
 app.use("/api/estadisticas", estadisticasRouter);
+
+// GET /api/apk/descargar - descarga protegida
+app.get("/api/apk/descargar", async (req, res) => {
+  const apkPath = process.env.APK_FILE_PATH || "/home/ivan/apk/telas-app.apk";
+
+  let authorized = false;
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith("Bearer ")) { try { jwt.verify(authHeader.slice(7), JWT_SECRET); authorized = true; } catch {} }
+  const token = req.query.token as string | undefined;
+  if (token) { try { const p = jwt.verify(token, JWT_SECRET) as any; authorized = p.purpose === "apk_download"; } catch {} }
+  if (!authorized) { res.status(401).json({ error: "No autorizado" }); return; }
+
+  const fs = await import("node:fs");
+  const stat = fs.statSync(apkPath);
+  res.set({
+    "Content-Type": "application/vnd.android.package-archive",
+    "Content-Length": String(stat.size),
+    "Content-Disposition": "attachment; filename=\"telas-app.apk\"",
+    "Accept-Ranges": "bytes",
+  });
+  fs.createReadStream(apkPath).pipe(res);
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", tz: process.env.TZ });

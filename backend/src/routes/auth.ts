@@ -96,7 +96,14 @@ router.post("/usuarios", authenticate, requireAdmin, async (req: Request, res: R
     await db.delete(recoveryCodes).where(and(eq(recoveryCodes.email, body.email), eq(recoveryCodes.usado, false)));
     await db.insert(recoveryCodes).values({ email: body.email, code, expiresEn: expires });
 
-    await sendSetupCodeEmail(body.email, code);
+    // generar token de descarga APK (JWT independiente, no expone el código)
+    const downloadToken = jwt.sign(
+      { email: body.email, purpose: "apk_download" },
+      JWT_SECRET,
+      { expiresIn: "7d" },
+    );
+
+    await sendSetupCodeEmail(body.email, code, downloadToken);
     res.status(201).json({ ...inserted[0], emailSent: true });
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
