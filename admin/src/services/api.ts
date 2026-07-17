@@ -57,7 +57,7 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   return undefined as unknown as T
 }
 
-export function login(email: string, password: string): Promise<{ token: string }> {
+export function login(email: string, password: string): Promise<{ token: string; mustChangePassword?: boolean }> {
   return request('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),

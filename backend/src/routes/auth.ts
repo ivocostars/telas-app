@@ -21,7 +21,25 @@ router.post("/login", async (req: Request, res: Response) => {
     const body = loginSchema.parse(req.body);
     const user = await db.select().from(usuarios).where(eq(usuarios.email, body.email)).limit(1).then((rows) => rows[0]);
     if (!user) { res.status(401).json({ error: "Credenciales inválidas" }); return; }
-    if (user.pendingSetup || !user.passwordHash) { res.status(401).json({ error: "Debés configurar tu contraseña primero. Usá la opción 'Olvidaste tu contraseña' para recibir un código por email." }); return; }
+
+    // Si está en pendingSetup, verificar contra código de recuperación
+    if (user.pendingSetup || !user.passwordHash) {
+      const codeRecord = await db
+        .select()
+        .from(recoveryCodes)
+        .where(and(eq(recoveryCodes.email, body.email), eq(recoveryCodes.code, body.password), eq(recoveryCodes.usado, false)))
+        .limit(1)
+        .then((r) => r[0]);
+      if (codeRecord) {
+        // Código válido - loguear pero forzar cambio de contraseña
+        const token = jwt.sign({ id: user.id, email: user.email, rol: user.rol, temp: true }, JWT_SECRET, { expiresIn: "1h" });
+        res.json({ token, user: { id: user.id, email: user.email, rol: user.rol }, mustChangePassword: true });
+        return;
+      }
+      res.status(401).json({ error: "Código inválido o ya usado. Revisá tu email o usá 'Olvidaste tu contraseña'." });
+      return;
+    }
+
     const valid = await bcrypt.compare(body.password, user.passwordHash!);
     if (!valid) { res.status(401).json({ error: "Credenciales inválidas" }); return; }
     const token = jwt.sign({ id: user.id, email: user.email, rol: user.rol }, JWT_SECRET, { expiresIn: (process.env.JWT_EXPIRES_IN || "24h") as SignOptions["expiresIn"] });

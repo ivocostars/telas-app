@@ -46,6 +46,15 @@ export default function LoginScreen({ navigation }: Props) {
   const [recLoading, setRecLoading] = useState(false);
   const [recMsg, setRecMsg] = useState('');
 
+  // Forced password change (primer ingreso)
+  const [mustChange, setMustChange] = useState(false);
+  const [changeEmail, setChangeEmail] = useState('');
+  const [changeCode, setChangeCode] = useState('');
+  const [changeNewPw, setChangeNewPw] = useState('');
+  const [changeShowPw, setChangeShowPw] = useState(false);
+  const [changeMsg, setChangeMsg] = useState('');
+  const [changing, setChanging] = useState(false);
+
   const fadeTitle = useRef(new Animated.Value(0)).current;
   const fadeSubtitle = useRef(new Animated.Value(0)).current;
   const fadeForm = useRef(new Animated.Value(0)).current;
@@ -69,6 +78,12 @@ export default function LoginScreen({ navigation }: Props) {
     setError('');
     try {
       const res = await login(email.trim(), password.trim());
+      if ((res as any).mustChangePassword) {
+        setChangeEmail(email.trim());
+        setChangeCode(password.trim());
+        setMustChange(true);
+        return;
+      }
       await saveToken(res.token);
       setToken(res.token);
       navigation.replace('Home');
@@ -77,6 +92,30 @@ export default function LoginScreen({ navigation }: Props) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleChangePassword() {
+    if (changeNewPw.length < 8 || !/[!@#$%^&*(),.?":{}|<>]/.test(changeNewPw)) {
+      setChangeMsg('Mínimo 8 + 1 especial');
+      return;
+    }
+    setChanging(true); setChangeMsg('');
+    try {
+      const res = await fetch(`${API_URL}/auth/setup-password`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: changeEmail, code: changeCode, newPassword: changeNewPw }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const loginRes = await login(changeEmail, changeNewPw);
+        await saveToken(loginRes.token);
+        setToken(loginRes.token);
+        navigation.replace('Home');
+      } else {
+        setChangeMsg(data.error || 'Error');
+      }
+    } catch { setChangeMsg('Error de conexión'); }
+    finally { setChanging(false); }
   }
 
   async function handleSendCode() {
@@ -212,6 +251,29 @@ export default function LoginScreen({ navigation }: Props) {
 
               <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowRecover(false); setRecStep('email'); setRecMsg(''); }}>
                 <Text style={styles.cancelText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      {/* Forzar cambio de contraseña en primer ingreso */}
+      <Modal visible={mustChange} transparent animationType="fade" onRequestClose={() => {}}>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Cambiar contraseña</Text>
+              <Text style={[styles.recMsg, { color: COLORS.error, marginBottom: 12 }]}>⚠️ Primer ingreso. Debés cambiar la contraseña.</Text>
+              <TextInput style={styles.input} placeholder="Email" placeholderTextColor={COLORS.textMuted} value={changeEmail} editable={false} />
+              <View style={styles.pwRow}>
+                <TextInput style={[styles.input, { flex: 1 }]} placeholder="Nueva contraseña" placeholderTextColor={COLORS.textMuted} value={changeNewPw} onChangeText={setChangeNewPw} secureTextEntry={!changeShowPw} />
+                <TouchableOpacity style={styles.eyeBtn} onPress={() => setChangeShowPw(!changeShowPw)}>
+                  <Text style={styles.eyeIcon}>{changeShowPw ? '👁️' : '👁️‍🗨️'}</Text>
+                </TouchableOpacity>
+              </View>
+              {changeMsg ? <Text style={[styles.recMsg, changeMsg.includes('✅') ? { color: COLORS.success } : { color: COLORS.error }]}>{changeMsg}</Text> : null}
+              <TouchableOpacity style={[styles.button, changing && styles.buttonDisabled]} onPress={handleChangePassword} disabled={changing}>
+                {changing ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.buttonText}>Establecer contraseña</Text>}
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>

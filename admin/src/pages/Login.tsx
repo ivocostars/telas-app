@@ -24,18 +24,60 @@ export default function Login() {
   const [recMsg, setRecMsg] = useState('')
   const [recovering, setRecovering] = useState(false)
 
+  const [mustChange, setMustChange] = useState(false)
+  const [changeEmail, setChangeEmail] = useState('')
+  const [changeCode, setChangeCode] = useState('')
+  const [changeNewPass, setChangeNewPass] = useState('')
+  const [changeMsg, setChangeMsg] = useState('')
+  const [changing, setChanging] = useState(false)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
       const res = await login(email, password)
+      if (res.mustChangePassword) {
+        setChangeEmail(email)
+        setChangeCode(password)
+        setMustChange(true)
+        return
+      }
       localStorage.setItem('token', res.token)
       navigate('/')
     } catch {
       setError('Credenciales inválidas')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    const err = validatePass(changeNewPass)
+    if (err) { setChangeMsg(err); return }
+    setChanging(true)
+    setChangeMsg('')
+    try {
+      // Llama al setup-password o reset-password (funcionan igual)
+      const res = await fetch('/api/auth/setup-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: changeEmail, code: changeCode, newPassword: changeNewPass }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        // Login con la nueva contraseña
+        const loginRes = await login(changeEmail, changeNewPass)
+        localStorage.setItem('token', loginRes.token)
+        setMustChange(false)
+        navigate('/')
+      } else {
+        setChangeMsg(data.error || 'Error')
+      }
+    } catch {
+      setChangeMsg('Error de conexión')
+    } finally {
+      setChanging(false)
     }
   }
 
@@ -77,8 +119,13 @@ export default function Login() {
       })
       const data = await res.json()
       if (data.ok) {
-        setRecMsg('✅ Contraseña restablecida')
-        setTimeout(() => { setShowRecover(false); setRecStep('email'); setRecMsg(''); setRecCode(''); setNewPass('') }, 2000)
+        // Login con la nueva contraseña
+        const loginRes = await login(recEmail.trim(), newPass)
+        localStorage.setItem('token', loginRes.token)
+        setShowRecover(false)
+        setRecStep('email')
+        setRecMsg('')
+        navigate('/')
       } else {
         setRecMsg(data.error || 'Error')
       }
@@ -90,76 +137,95 @@ export default function Login() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-accent" />
-        <h1 className="login-title">Telas Admin</h1>
-        <p className="login-subtitle">Control de Entradas</p>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="email">Email</label>
-            <input id="email" type="email" className="form-input" placeholder="admin@ejemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+    <>
+      <div className="login-page">
+        <div className="login-card">
+          <div className="login-accent" />
+          <h1 className="login-title">Telas Admin</h1>
+          <p className="login-subtitle">Control de Entradas</p>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="email">Email</label>
+              <input id="email" type="email" className="form-input" placeholder="admin@ejemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="password">Contraseña o código</label>
+              <input id="password" type="password" className="form-input" placeholder="Ingresá tu contraseña o código" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </div>
+            {error && <p className="form-error">{error}</p>}
+            <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+              {loading ? 'Ingresando...' : 'Ingresar'}
+            </button>
+            <button type="button" className="btn btn-block" style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--color-text-light)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }} onClick={() => { setShowRecover(true); setRecStep('email'); setRecMsg(''); setRecCode(''); setNewPass('') }}>
+              ¿Olvidaste tu contraseña?
+            </button>
+          </form>
+        </div>
+
+        <Modal open={showRecover} onClose={() => setShowRecover(false)} title="Recuperar contraseña">
+          <div className="form">
+            {recStep === 'email' ? (
+              <>
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 8 }}>Te enviaremos un código de recuperación a tu email.</p>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input type="email" className="form-input" value={recEmail} onChange={(e) => setRecEmail(e.target.value)} placeholder="tu@email.com" />
+                </div>
+                {recMsg && <p className="form-error" style={{ color: 'var(--color-text-light)' }}>{recMsg}</p>}
+                <div className="form-actions">
+                  <button type="button" className="btn btn-outline" onClick={() => setShowRecover(false)}>Cancelar</button>
+                  <button type="button" className="btn btn-primary" onClick={handleSendCode} disabled={recovering || !recEmail.trim()}>
+                    {recovering ? 'Enviando...' : 'Enviar código'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 8 }}>Ingresá el código recibido y tu nueva contraseña.</p>
+                <div className="form-group">
+                  <label className="form-label">Código de 6 dígitos</label>
+                  <input type="text" className="form-input" value={recCode} onChange={(e) => setRecCode(e.target.value)} placeholder="123456" maxLength={6} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Nueva contraseña</label>
+                  <input type="password" className="form-input" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Mínimo 8 + 1 especial" />
+                  {newPass.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 2 }}>{validatePass(newPass) || '✅'}</span>}
+                </div>
+                {recMsg && <p className="form-error" style={{ color: recMsg.includes('✅') ? 'var(--color-success)' : recMsg.includes('📧') ? 'var(--color-text-light)' : 'var(--color-error)' }}>{recMsg}</p>}
+                <div className="form-actions">
+                  <button type="button" className="btn btn-outline" onClick={() => setRecStep('email')}>← Volver</button>
+                  <button type="button" className="btn btn-primary" onClick={handleReset} disabled={recovering}>
+                    {recovering ? 'Procesando...' : 'Restablecer y entrar'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="password">Contraseña</label>
-            <input id="password" type="password" className="form-input" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </div>
-          {error && <p className="form-error">{error}</p>}
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? 'Ingresando...' : 'Ingresar'}
-          </button>
-          <button type="button" className="btn btn-block" style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--color-text-light)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }} onClick={() => { setShowRecover(true); setRecStep('email'); setRecMsg(''); setRecCode(''); setNewPass('') }}>
-            ¿Olvidaste tu contraseña?
-          </button>
-        </form>
+        </Modal>
       </div>
 
-      <Modal open={showRecover} onClose={() => setShowRecover(false)} title="Recuperar contraseña">
+      <Modal open={mustChange} onClose={() => {}} title="Cambiar contraseña obligatorio" large>
         <div className="form">
-          {recStep === 'email' ? (
-            <>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 8 }}>
-                Te enviaremos un código de recuperación a tu email.
-              </p>
-              <div className="form-group">
-                <label className="form-label">Email</label>
-                <input type="email" className="form-input" value={recEmail} onChange={(e) => setRecEmail(e.target.value)} placeholder="tu@email.com" />
-              </div>
-              {recMsg && <p className="form-error" style={{ color: 'var(--color-text-light)' }}>{recMsg}</p>}
-              <div className="form-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setShowRecover(false)}>Cancelar</button>
-                <button type="button" className="btn btn-primary" onClick={handleSendCode} disabled={recovering || !recEmail.trim()}>
-                  {recovering ? 'Enviando...' : 'Enviar código'}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 8 }}>
-                Ingresá el código que recibiste por email y tu nueva contraseña.
-              </p>
-              <div className="form-group">
-                <label className="form-label">Código de 6 dígitos</label>
-                <input type="text" className="form-input" value={recCode} onChange={(e) => setRecCode(e.target.value)} placeholder="123456" maxLength={6} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Nueva contraseña</label>
-                <input type="password" className="form-input" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Mínimo 8 + 1 especial" />
-                {newPass.length > 0 && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 2 }}>{validatePass(newPass) || '✅'}</span>
-                )}
-              </div>
-              {recMsg && <p className="form-error" style={{ color: recMsg.includes('✅') ? 'var(--color-success)' : recMsg.includes('📧') ? 'var(--color-text-light)' : 'var(--color-error)' }}>{recMsg}</p>}
-              <div className="form-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setRecStep('email')}>← Volver</button>
-                <button type="button" className="btn btn-primary" onClick={handleReset} disabled={recovering}>
-                  {recovering ? 'Procesando...' : 'Restablecer'}
-                </button>
-              </div>
-            </>
-          )}
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-error)', fontWeight: 600, marginBottom: 8 }}>
+            ⚠️ Es tu primer ingreso. Debes cambiar la contraseña antes de continuar.
+          </p>
+          <div className="form-group">
+            <label className="form-label">Email</label>
+            <input type="email" className="form-input" value={changeEmail} disabled />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Nueva contraseña</label>
+            <input type="password" className="form-input" value={changeNewPass} onChange={(e) => setChangeNewPass(e.target.value)} placeholder="Mínimo 8 + 1 especial" />
+            {changeNewPass.length > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 2 }}>{validatePass(changeNewPass) || '✅'}</span>}
+          </div>
+          {changeMsg && <p className="form-error" style={{ color: changeMsg.includes('✅') ? 'var(--color-success)' : 'var(--color-error)' }}>{changeMsg}</p>}
+          <div className="form-actions">
+            <button type="button" className="btn btn-primary" onClick={handleChangePassword} disabled={changing}>
+              {changing ? 'Guardando...' : 'Establecer contraseña y entrar'}
+            </button>
+          </div>
         </div>
       </Modal>
-    </div>
+    </>
   )
 }
