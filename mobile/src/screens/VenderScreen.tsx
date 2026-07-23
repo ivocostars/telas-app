@@ -46,6 +46,7 @@ interface TicketData {
   qrHash: string;
   email: string;
   telefono: string;
+  alumnaInvitada: string;
 }
 
 export default function VenderScreen({ navigation }: Props) {
@@ -95,6 +96,7 @@ export default function VenderScreen({ navigation }: Props) {
         qrHash: data.qrHash,
         email: form.email.trim(),
         telefono: form.telefono.trim(),
+        alumnaInvitada: form.alumna_invitada.trim(),
       });
     } catch (e: any) {
       Alert.alert('Error', e.message || 'No se pudo generar la entrada');
@@ -189,7 +191,7 @@ export default function VenderScreen({ navigation }: Props) {
           <View style={styles.captureCard}>
             <Text style={styles.captureTitle}>ACROBACIA EN TELAS</Text>
             <View style={styles.captureQrWrap}>
-              <QRCode value={ticket.qrHash} size={280} backgroundColor="white" color="#000" />
+              <QRCode value={[ticket.qrHash, ticket.nombreCompleto, ticket.alumnaInvitada || ''].join('|')} size={280} backgroundColor="white" color="#000" />
             </View>
             <Text style={styles.captureName}>
               {ticket.nombreCompleto.toUpperCase()}
@@ -269,7 +271,7 @@ export default function VenderScreen({ navigation }: Props) {
         {ticket && (
           <View style={styles.ticketCard}>
             <View style={styles.qrContainer}>
-              <QRCode value={ticket.qrHash} size={200} backgroundColor="white" color={COLORS.bg} />
+              <QRCode value={[ticket.qrHash, ticket.nombreCompleto, ticket.alumnaInvitada || ''].join('|')} size={200} backgroundColor="white" color={COLORS.bg} />
             </View>
 
             <Text style={styles.ticketName}>{ticket.nombreCompleto}</Text>

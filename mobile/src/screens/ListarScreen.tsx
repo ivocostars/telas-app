@@ -273,7 +273,7 @@ export default function ListarScreen({ navigation }: Props) {
                     <Text style={styles.captureTitle}>ACROBACIA EN TELAS</Text>
                     <View style={styles.captureQrWrap}>
                       <QRCode
-                        value={selected.qrHash}
+                        value={[selected.qrHash, selected.nombreCompleto, selected.alumnaInvitada || ''].join('|')}
                         size={280}
                         backgroundColor="white"
                         color="#000"
@@ -291,7 +291,7 @@ export default function ListarScreen({ navigation }: Props) {
                 )}
                 <View style={styles.modalQr}>
                   <QRCode
-                    value={selected.qrHash}
+                    value={[selected.qrHash, selected.nombreCompleto, selected.alumnaInvitada || ''].join('|')}
                     size={200}
                     backgroundColor="white"
                     color={COLORS.bg}
