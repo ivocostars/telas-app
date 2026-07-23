@@ -105,23 +105,23 @@ END:VCALENDAR`;
 <head>
   <meta charset="utf-8">
   <style>
-    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #0b0c10; color: #fff; }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #0b0c10; color: #fff; font-size: 17px; }
     .container { max-width: 600px; margin: 0 auto; padding: 24px; background: #1f2833; border-radius: 12px; }
     h1 { color: #ff00ff; font-size: 26px; text-align: center; text-transform: uppercase; letter-spacing: 2px; }
-    p { color: #c5c6c7; line-height: 1.6; }
+    p { color: #c5c6c7; line-height: 1.6; font-size: 17px; }
     .detail { background: #0b0c10; padding: 12px 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #00ffff; }
-    .detail p { margin: 4px 0; color: #fff; }
+    .detail p { margin: 4px 0; color: #fff; font-size: 17px; }
     .event-info { background: #0b0c10; padding: 12px 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #ff00ff; }
-    .event-info p { margin: 4px 0; color: #fff; }
+    .event-info p { margin: 4px 0; color: #fff; font-size: 17px; }
     .qr-wrapper { text-align: center; margin: 24px 0; padding: 20px; border-radius: 12px; }
     .qr-wrapper img { border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #45a29e; font-size: 12px; color: #66fcf1; text-align: center; }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #45a29e; font-size: 13px; color: #66fcf1; text-align: center; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>¡Hola ${spectatorName}! 🪩</h1>
-    <p>Gracias por tu compra. Presentá este código QR en la entrada del evento <strong>Muestra invernal de tela y aro</strong> para acceder.</p>
+    <p>Presentá este código QR en la entrada de la <strong>Muestra invernal de tela y aro</strong> para acceder.</p>
     
     <div class="event-info">
       <h2 style="color: #00ffff; font-size: 18px; margin: 16px 0 8px;">🪩 Datos del evento</h2>
