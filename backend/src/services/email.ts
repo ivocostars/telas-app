@@ -89,13 +89,13 @@ export async function sendQrEmail(
 
   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Acrobacia en Telas//ES
+PRODID:-//Muestra invernal de tela y aro//ES
 BEGIN:VEVENT
 DTSTART:20260808T233000Z
 DTEND:20260809T023000Z
-SUMMARY:Acrobacia en Telas
+SUMMARY:Muestra invernal de tela y aro
 LOCATION:${finalAddress}
-DESCRIPTION:Evento de exhibición de acrobacia en telas
+DESCRIPTION:Muestra invernal de tela y aro - Profe: Pola París - Temática: Música Disco 🪩
 END:VEVENT
 END:VCALENDAR`;
 
@@ -105,25 +105,29 @@ END:VCALENDAR`;
 <head>
   <meta charset="utf-8">
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f9f9f9; }
-    .container { max-width: 600px; margin: 0 auto; padding: 24px; }
-    h1 { color: #1a1a2e; font-size: 24px; }
-    p { color: #555; line-height: 1.6; }
-    .detail { background: #f0f0f5; padding: 12px 16px; border-radius: 8px; margin: 16px 0; }
-    .detail p { margin: 4px 0; }
-    .event-info { background: #fef9e7; padding: 12px 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #D4A847; }
-    .event-info p { margin: 4px 0; }
-    .qr-wrapper { text-align: center; margin: 24px 0; }
-    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 12px; color: #999; }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #0b0c10; color: #fff; }
+    .container { max-width: 600px; margin: 0 auto; padding: 24px; background: #1f2833; border-radius: 12px; }
+    h1 { color: #ff00ff; font-size: 26px; text-align: center; text-transform: uppercase; letter-spacing: 2px; }
+    p { color: #c5c6c7; line-height: 1.6; }
+    .detail { background: #0b0c10; padding: 12px 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #00ffff; }
+    .detail p { margin: 4px 0; color: #fff; }
+    .event-info { background: #0b0c10; padding: 12px 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #ff00ff; }
+    .event-info p { margin: 4px 0; color: #fff; }
+    .qr-wrapper { text-align: center; margin: 24px 0; padding: 20px; background: linear-gradient(45deg, #ff00ff, #00ffff); border-radius: 12px; }
+    .qr-wrapper img { border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #45a29e; font-size: 12px; color: #66fcf1; text-align: center; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>¡Hola ${spectatorName}!</h1>
-    <p>Gracias por tu compra. Presentá este código QR en la entrada del evento <strong>Acrobacia en Telas</strong> para acceder.</p>
+    <h1>¡Hola ${spectatorName}! 🪩</h1>
+    <p>Gracias por tu compra. Presentá este código QR en la entrada del evento <strong>Muestra invernal de tela y aro</strong> para acceder.</p>
     
     <div class="event-info">
-      <h2 style="color: #1a1a2e; font-size: 18px; margin: 16px 0 8px;">📅 Datos del evento</h2>
+      <h2 style="color: #00ffff; font-size: 18px; margin: 16px 0 8px;">🪩 Datos del evento</h2>
+      <p><strong>Evento:</strong> Muestra invernal de tela y aro</p>
+      <p><strong>Profe:</strong> Pola París</p>
+      <p><strong>Temática:</strong> Música Disco 💃🕺</p>
       <p><strong>Fecha:</strong> ${formattedDate}</p>
       <p><strong>Dirección:</strong> ${finalAddress}</p>
     </div>
@@ -136,16 +140,16 @@ END:VCALENDAR`;
       <img src="cid:qr" alt="QR de ingreso" style="width: 300px; height: 300px;" />
     </div>
     ${mapHtml}
-    <p>Guardá este correo o mostrá el QR desde tu teléfono el día del evento.</p>
+    <p style="text-align: center;">Guardá este correo o mostrá el QR desde tu teléfono el día del evento.</p>
     <div class="footer">
-      <p>Acrobacia en Telas — Evento de exhibición</p>
+      <p>Muestra invernal de tela y aro — Profe: Pola París</p>
     </div>
   </div>
 </body>
 </html>`;
 
   await transporter.sendMail({
-    from: `"Acrobacia en Telas" <${config.user}>`,
+    from: `"Muestra invernal de tela y aro" <${config.user}>`,
     to,
     subject,
     html,

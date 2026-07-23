@@ -432,7 +432,7 @@ router.post("/:id/email", authenticate, requireAdmin, async (req: Request, res: 
 
     await sendQrEmail(
       spectator.email,
-      "Tu código QR para Acrobacia en Telas",
+      "Tu código QR para Muestra invernal de tela y aro",
       qrBuffer,
       spectator.nombreCompleto,
       spectator.alumnaInvitada,
