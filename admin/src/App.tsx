@@ -5,6 +5,7 @@ import { ToastProvider } from './components/Toast'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Espectadores from './pages/Espectadores'
+import Escaneos from './pages/Escaneos'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/espectadores" element={<Espectadores />} />
+              <Route path="/escaneos" element={<Escaneos />} />
             </Route>
           </Route>
         </Routes>

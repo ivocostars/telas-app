@@ -206,3 +206,11 @@ export function marcarSalida(id: number): Promise<{ valido: boolean; motivo?: st
     body: JSON.stringify({}),
   })
 }
+
+export async function getEscaneos() {
+  return request<any[]>('/escaneos');
+}
+
+export async function deleteEscaneo(id: number) {
+  return request<any>(`/escaneos/${id}`, { method: 'DELETE' });
+}

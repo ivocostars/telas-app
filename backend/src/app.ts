@@ -10,6 +10,7 @@ import validarRouter from "./routes/validar.js";
 import salidaRouter from "./routes/salida.js";
 import estadisticasRouter from "./routes/estadisticas.js";
 import eventConfigRouter from "./routes/event-config.js";
+import escaneosRouter from "./routes/escaneos.js";
 
 import path from "node:path";
 import jwt from "jsonwebtoken";
@@ -37,6 +38,7 @@ app.use("/api/validar", validarRouter);
 app.use("/api/salida", salidaRouter);
 app.use("/api/estadisticas", estadisticasRouter);
 app.use("/api/event-config", eventConfigRouter);
+app.use("/api/escaneos", escaneosRouter);
 
 function checkApkAuth(req: express.Request): boolean {
   const authHeader = req.headers.authorization;

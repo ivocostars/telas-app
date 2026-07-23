@@ -159,6 +159,10 @@ export function Layout() {
             <span className="nav-icon">👥</span>
             Espectadores
           </NavLink>
+          <NavLink to="/escaneos" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'} onClick={() => setSidebarOpen(false)}>
+            <span className="nav-icon">📱</span>
+            Escaneos
+          </NavLink>
           <button className="nav-link" onClick={() => { setSidebarOpen(false); openUsers() }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>
             <span className="nav-icon">🔐</span>
             Usuarios
