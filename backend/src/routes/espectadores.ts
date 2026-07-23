@@ -422,7 +422,13 @@ router.post("/:id/email", authenticate, requireAdmin, async (req: Request, res: 
       return;
     }
 
-    const qrBuffer = await QRCode.toBuffer(spectator.qrHash, {
+    const qrData = [
+      spectator.qrHash,
+      spectator.nombreCompleto,
+      spectator.alumnaInvitada || ''
+    ].join('|');
+
+    const qrBuffer = await QRCode.toBuffer(qrData, {
       type: "png",
       width: 400,
       margin: 2,
