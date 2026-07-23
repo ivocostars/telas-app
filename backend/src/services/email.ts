@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import fs from "fs";
+import path from "path";
 
 interface SmtpConfig {
   host: string;
@@ -23,6 +25,8 @@ export async function sendQrEmail(
   spectatorName: string,
   alumnaInvitada: string | null,
   silla: boolean,
+  eventDate: string | null = null,
+  eventAddress: string | null = null
 ) {
   const config = getSmtpConfig();
   const transporter = nodemailer.createTransport({
@@ -43,6 +47,59 @@ export async function sendQrEmail(
     ? `<p><strong>Silla reservada:</strong> Sí</p>`
     : "";
 
+  const googleMapsUrl = eventAddress 
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` 
+    : "#";
+
+  let mapAttachment = null;
+  const mapPath = path.join(process.cwd(), "assets", "map.jpg");
+  if (fs.existsSync(mapPath)) {
+    mapAttachment = {
+      filename: "map.jpg",
+      path: mapPath,
+      cid: "map"
+    };
+  }
+
+  const mapHtml = (eventAddress && mapAttachment)
+    ? `
+      <div style="margin: 24px 0; text-align: center;">
+        <p><strong>Ubicación en el mapa:</strong></p>
+        <a href="${googleMapsUrl}" target="_blank">
+          <img src="cid:map" alt="Ubicación en el mapa" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; border: 1px solid #ddd;" />
+        </a>
+        <p style="font-size: 12px; margin-top: 8px;"><a href="${googleMapsUrl}" target="_blank" style="color: #6C3CB5;">Abrir en Google Maps</a></p>
+      </div>
+      `
+    : "";
+
+  let formattedDate = "sábado, 8 de agosto de 2026, 08:30 p. m."; // Default fallback
+  if (eventDate) {
+    try {
+      formattedDate = new Intl.DateTimeFormat('es-AR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true
+      }).format(new Date(eventDate));
+    } catch(e) {}
+  }
+
+  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Acrobacia en Telas//ES
+BEGIN:VEVENT
+DTSTART:20260808T233000Z
+DTEND:20260809T023000Z
+SUMMARY:Acrobacia en Telas
+LOCATION:${eventAddress || 'Palmar 7035 - Club Liniers'}
+DESCRIPTION:Evento de exhibición de acrobacia en telas
+END:VEVENT
+END:VCALENDAR`;
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -55,6 +112,8 @@ export async function sendQrEmail(
     p { color: #555; line-height: 1.6; }
     .detail { background: #f0f0f5; padding: 12px 16px; border-radius: 8px; margin: 16px 0; }
     .detail p { margin: 4px 0; }
+    .event-info { background: #fef9e7; padding: 12px 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #D4A847; }
+    .event-info p { margin: 4px 0; }
     .qr-wrapper { text-align: center; margin: 24px 0; }
     .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 12px; color: #999; }
   </style>
@@ -63,6 +122,13 @@ export async function sendQrEmail(
   <div class="container">
     <h1>¡Hola ${spectatorName}!</h1>
     <p>Gracias por tu compra. Presentá este código QR en la entrada del evento <strong>Acrobacia en Telas</strong> para acceder.</p>
+    
+    <div class="event-info">
+      <h2 style="color: #1a1a2e; font-size: 18px; margin: 16px 0 8px;">📅 Datos del evento</h2>
+      <p><strong>Fecha:</strong> ${formattedDate}</p>
+      <p><strong>Dirección:</strong> ${eventAddress || 'Palmar 7035 - Club Liniers'}</p>
+    </div>
+
     <div class="detail">
       ${alumnaHtml}
       ${sillaHtml}
@@ -70,6 +136,7 @@ export async function sendQrEmail(
     <div class="qr-wrapper">
       <img src="cid:qr" alt="QR de ingreso" style="width: 300px; height: 300px;" />
     </div>
+    ${mapHtml}
     <p>Guardá este correo o mostrá el QR desde tu teléfono el día del evento.</p>
     <div class="footer">
       <p>Acrobacia en Telas — Evento de exhibición</p>
@@ -90,6 +157,12 @@ export async function sendQrEmail(
         contentType: "image/png",
         cid: "qr",
       },
+      {
+        filename: "evento.ics",
+        content: Buffer.from(icsContent, "utf-8"),
+        contentType: "text/calendar"
+      },
+      ...(mapAttachment ? [mapAttachment] : [])
     ],
   });
 }

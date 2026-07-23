@@ -6,7 +6,7 @@ import QRCode from "qrcode";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import { db } from "../db/index.js";
-import { espectadores, escaneos } from "../db/schema.js";
+import { espectadores, escaneos, eventConfig } from "../db/schema.js";
 import { authenticate, requireAdmin } from "../middleware/auth.js";
 import { sendQrEmail } from "../services/email.js";
 
@@ -428,6 +428,8 @@ router.post("/:id/email", authenticate, requireAdmin, async (req: Request, res: 
       margin: 2,
     });
 
+    const evCfg = await db.select().from(eventConfig).limit(1).then((r) => r[0]);
+
     await sendQrEmail(
       spectator.email,
       "Tu código QR para Acrobacia en Telas",
@@ -435,6 +437,8 @@ router.post("/:id/email", authenticate, requireAdmin, async (req: Request, res: 
       spectator.nombreCompleto,
       spectator.alumnaInvitada,
       spectator.silla,
+      evCfg?.eventDate?.toISOString() || null,
+      evCfg?.eventAddress || null
     );
 
     res.json({ sent: true });
