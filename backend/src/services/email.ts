@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
+import PDFDocument from "pdfkit";
 
 interface SmtpConfig {
   host: string;
@@ -151,6 +152,32 @@ END:VCALENDAR`;
 </body>
 </html>`;
 
+  const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+    const doc = new PDFDocument({ size: "A4", margin: 50 });
+    const buffers: Buffer[] = [];
+    doc.on("data", (chunk) => buffers.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", reject);
+
+    doc.fontSize(20).text("ENTRADA - Muestra invernal de tela y aro", { align: "center" });
+    doc.moveDown(2);
+    doc.fontSize(14).text(`Espectador: ${spectatorName}`);
+    doc.moveDown(0.5);
+    doc.text(`Temática: Música Disco`);
+    doc.moveDown(0.5);
+    doc.text(`Fecha: ${formattedDate}`);
+    doc.moveDown(0.5);
+    doc.text(`Dirección: ${finalAddress}`);
+    doc.moveDown(2);
+    
+    // El QR en el PDF (blanco y negro, simple)
+    doc.image(qrBuffer, { fit: [250, 250], align: "center" });
+    doc.moveDown(15); // mover abajo del QR
+    doc.fontSize(10).text("Presentá este QR en la entrada para acceder al evento.", { align: "center" });
+
+    doc.end();
+  });
+
   await transporter.sendMail({
     from: `"Muestra invernal de tela y aro" <${config.user}>`,
     to,
@@ -168,6 +195,11 @@ END:VCALENDAR`;
         filename: "evento.ics",
         content: Buffer.from(icsContent, "utf-8"),
         contentType: "text/calendar"
+      },
+      {
+        filename: "entrada.pdf",
+        content: pdfBuffer,
+        contentType: "application/pdf"
       },
       ...(mapAttachment ? [mapAttachment] : [])
     ],
