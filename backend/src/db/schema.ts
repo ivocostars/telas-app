@@ -18,6 +18,21 @@ export const usuarios = pgTable("usuarios", {
     .defaultNow(),
 });
 
+export const refreshTokens = pgTable("refresh_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => usuarios.id, { onDelete: "cascade" }),
+  tokenHash: varchar("token_hash", { length: 64 }).notNull().unique(),
+  deviceType: varchar("device_type", { length: 20 }).notNull().default("web"),
+  deviceName: varchar("device_name", { length: 100 }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+});
+
 export const recoveryCodes = pgTable("recovery_codes", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull(),
@@ -42,6 +57,15 @@ export const espectadores = pgTable("espectadores", {
   ingresado: boolean("ingresado").notNull().default(false),
   ingresadoEn: timestamp("ingresado_en", { withTimezone: true }),
   creadoEn: timestamp("creado_en", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const eventConfig = pgTable("event_config", {
+  id: serial("id").primaryKey(),
+  eventDate: timestamp("event_date", { withTimezone: true }),
+  eventAddress: varchar("event_address", { length: 500 }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });

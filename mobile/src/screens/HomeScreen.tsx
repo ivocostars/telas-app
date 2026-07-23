@@ -10,18 +10,22 @@ import {
   Modal,
   StatusBar,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../config';
 import {
+  getToken,
   getScannerName,
   saveScannerName,
   getServerUrl,
   saveServerUrl,
+  removeToken,
+  removeRefreshToken,
 } from '../services/storage';
 import { useAppStore } from '../store';
-import { removeToken } from '../services/storage';
 import { RootStackParamList } from '../types';
+import { API_URL } from '../config';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -73,6 +77,7 @@ export default function HomeScreen({ navigation }: Props) {
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const [nameInput, setNameInput] = useState('');
 
+
   const fadeValues = useRef(CARDS.map(() => new Animated.Value(0))).current;
   const waveAnim = useRef(new Animated.Value(0)).current;
 
@@ -91,6 +96,13 @@ export default function HomeScreen({ navigation }: Props) {
       )
     ).start();
   }, []);
+
+  async function handleUpdate() {
+    const token = await getToken();
+    if (!token) return;
+    const url = `${API_URL}/apk/download?token=${encodeURIComponent(token)}`;
+    Linking.openURL(url).catch(() => {});
+  }
 
   function startWaveAnimation() {
     Animated.loop(
@@ -147,6 +159,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   async function handleLogout() {
     await removeToken();
+    await removeRefreshToken();
     setToken(null);
     navigation.replace('Login');
   }
@@ -210,7 +223,10 @@ export default function HomeScreen({ navigation }: Props) {
         <TouchableOpacity onPress={handleLogout}>
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
-        <Text style={styles.version}>v1.0.0</Text>
+        <TouchableOpacity onPress={handleUpdate}>
+          <Text style={styles.updateText}>📲 Instalar última versión</Text>
+        </TouchableOpacity>
+        <Text style={styles.version}>v1.1.0</Text>
       </View>
 
       <Modal
@@ -356,6 +372,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textMuted,
     textDecorationLine: 'underline',
+  },
+  updateText: {
+    fontSize: 13,
+    color: COLORS.primaryLight,
+    fontWeight: '600',
+    marginTop: 4,
   },
   version: {
     fontSize: 11,

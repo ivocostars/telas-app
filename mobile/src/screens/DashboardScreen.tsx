@@ -157,7 +157,7 @@ export default function DashboardScreen({ navigation }: Props) {
         }
         ListHeaderComponentStyle={styles.statsGridContainer}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>Cargando estadísticas...</Text>
+          <Text style={styles.emptyText}>{stats ? 'Sin ingresos recientes' : 'Cargando estadísticas...'}</Text>
         }
       />
     </View>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../config';
-import { createEspectador, sendEmail } from '../services/api';
+import { createEspectador, sendEmail, getEventConfig } from '../services/api';
 import { RootStackParamList } from '../types';
 
 type VenderScreenNavigationProp = NativeStackNavigationProp<
@@ -49,6 +49,16 @@ interface TicketData {
 }
 
 export default function VenderScreen({ navigation }: Props) {
+  const [eventInfo, setEventInfo] = useState<{ date?: string; address?: string }>({});
+
+  useEffect(() => {
+    getEventConfig().then((cfg) => {
+      if (cfg.eventDate || cfg.eventAddress) {
+        setEventInfo({ date: cfg.eventDate, address: cfg.eventAddress });
+      }
+    }).catch(() => {});
+  }, []);
+
   const [form, setForm] = useState<FormData>({
     nombreCompleto: '',
     email: '',
@@ -130,9 +140,10 @@ export default function VenderScreen({ navigation }: Props) {
       else if (digits.startsWith('11')) phone = '549' + digits;
       else if (digits.length >= 10) phone = '549' + digits;
 
-      const message = encodeURIComponent(
-        `🎟️ *Entrada - Telas*\n\n*Nombre:* ${ticket.nombreCompleto}`
-      );
+      let msg = `🎟️ *Entrada - Acrobacia en Telas*\n\n*Nombre:* ${ticket.nombreCompleto}`;
+      if (eventInfo.date) msg += `\n📅 *Fecha:* ${eventInfo.date}`;
+      if (eventInfo.address) msg += `\n📍 *Lugar:* ${eventInfo.address}`;
+      const message = encodeURIComponent(msg);
       Linking.openURL(`https://wa.me/${phone}?text=${message}`).catch(() =>
         Alert.alert('QR guardado', `El QR se guardó en la galería. Abrí WhatsApp y adjuntalo manualmente.`)
       );

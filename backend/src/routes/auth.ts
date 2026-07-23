@@ -3,18 +3,60 @@ import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import crypto from "node:crypto";
 import { z } from "zod";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, isNull } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { usuarios, recoveryCodes } from "../db/schema.js";
+import { usuarios, recoveryCodes, refreshTokens } from "../db/schema.js";
 import { JWT_SECRET, authenticate, requireAdmin } from "../middleware/auth.js";
 import { sendSetupCodeEmail, sendRecoveryCodeEmail } from "../services/email.js";
 
 const router = Router();
 
+const REFRESH_TOKEN_DAYS = 180;
+
 const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.string().email("Email inválido").transform((v) => v.toLowerCase()),
   password: z.string().min(1, "Contraseña requerida"),
+  deviceType: z.enum(["web", "mobile"]).optional().default("web"),
+  deviceName: z.string().max(100).optional(),
 });
+
+async function createRefreshToken(userId: number, deviceType: string, deviceName?: string) {
+  const refreshToken = crypto.randomBytes(40).toString("hex");
+  const hash = crypto.createHash("sha256").update(refreshToken).digest("hex");
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000);
+
+  await db.insert(refreshTokens).values({
+    userId,
+    tokenHash: hash,
+    deviceType,
+    deviceName: deviceName || null,
+    expiresAt,
+  });
+
+  return refreshToken;
+}
+
+async function rotateRefreshToken(oldTokenId: number, userId: number, deviceType: string, deviceName?: string) {
+  const refreshToken = crypto.randomBytes(40).toString("hex");
+  const hash = crypto.createHash("sha256").update(refreshToken).digest("hex");
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000);
+
+  await db.transaction(async (tx) => {
+    await tx.update(refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(eq(refreshTokens.id, oldTokenId));
+
+    await tx.insert(refreshTokens).values({
+      userId,
+      tokenHash: hash,
+      deviceType,
+      deviceName: deviceName || null,
+      expiresAt,
+    });
+  });
+
+  return refreshToken;
+}
 
 router.post("/login", async (req: Request, res: Response) => {
   try {
@@ -42,8 +84,9 @@ router.post("/login", async (req: Request, res: Response) => {
 
     const valid = await bcrypt.compare(body.password, user.passwordHash!);
     if (!valid) { res.status(401).json({ error: "Credenciales inválidas" }); return; }
-    const token = jwt.sign({ id: user.id, email: user.email, rol: user.rol }, JWT_SECRET, { expiresIn: (process.env.JWT_EXPIRES_IN || "24h") as SignOptions["expiresIn"] });
-    res.json({ token, user: { id: user.id, email: user.email, rol: user.rol } });
+    const token = jwt.sign({ id: user.id, email: user.email, rol: user.rol }, JWT_SECRET, { expiresIn: (process.env.JWT_EXPIRES_IN || "8h") as SignOptions["expiresIn"] });
+    const refreshToken = await createRefreshToken(user.id, body.deviceType, body.deviceName);
+    res.json({ token, refreshToken, user: { id: user.id, email: user.email, rol: user.rol } });
   } catch (err) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
     console.error("Login error:", err);
@@ -85,7 +128,7 @@ router.get("/usuarios", authenticate, requireAdmin, async (_req: Request, res: R
 router.post("/usuarios", authenticate, requireAdmin, async (req: Request, res: Response) => {
   try {
     const schema = z.object({
-      email: z.string().email("Email inválido"),
+      email: z.string().email("Email inválido").transform((v) => v.toLowerCase()),
       rol: z.enum(["admin", "scanner"]),
     });
     const body = schema.parse(req.body);
@@ -131,7 +174,7 @@ router.delete("/usuarios/:id", authenticate, requireAdmin, async (req: Request, 
 router.post("/setup-password", async (req: Request, res: Response) => {
   try {
     const schema = z.object({
-      email: z.string().email("Email inválido"),
+      email: z.string().email("Email inválido").transform((v) => v.toLowerCase()),
       code: z.string().min(1, "Código requerido"),
       newPassword: z.string().min(8, "Mínimo 8 caracteres").regex(/[!@#$%^&*(),.?":{}|<>]/, "Debe contener al menos un carácter especial"),
     });
@@ -162,7 +205,7 @@ router.post("/setup-password", async (req: Request, res: Response) => {
 // POST /api/auth/forgot-password
 router.post("/forgot-password", async (req: Request, res: Response) => {
   try {
-    const schema = z.object({ email: z.string().email("Email inválido") });
+    const schema = z.object({ email: z.string().email("Email inválido").transform((v) => v.toLowerCase()) });
     const body = schema.parse(req.body);
     const user = await db.select().from(usuarios).where(eq(usuarios.email, body.email)).limit(1).then((r) => r[0]);
     if (!user) { res.status(404).json({ error: "No existe una cuenta con ese email" }); return; }
@@ -183,7 +226,7 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
 router.post("/reset-password", async (req: Request, res: Response) => {
   try {
     const schema = z.object({
-      email: z.string().email("Email inválido"),
+      email: z.string().email("Email inválido").transform((v) => v.toLowerCase()),
       code: z.string().min(1, "Código requerido"),
       newPassword: z.string().min(8, "Mínimo 8 caracteres").regex(/[!@#$%^&*(),.?":{}|<>]/, "Debe contener al menos un carácter especial"),
     });
@@ -198,6 +241,68 @@ router.post("/reset-password", async (req: Request, res: Response) => {
   } catch (err) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: err.errors[0].message }); return; }
     console.error("Reset password error:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// POST /api/auth/refresh
+router.post("/refresh", async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) { res.status(400).json({ error: "Refresh token requerido" }); return; }
+
+    const hash = crypto.createHash("sha256").update(refreshToken).digest("hex");
+    const stored = await db
+      .select()
+      .from(refreshTokens)
+      .where(and(eq(refreshTokens.tokenHash, hash), isNull(refreshTokens.revokedAt)))
+      .limit(1)
+      .then((r) => r[0]);
+
+    if (!stored || stored.expiresAt < new Date()) {
+      res.status(401).json({ error: "Sesión expirada, iniciá sesión nuevamente" });
+      return;
+    }
+
+    const user = await db.select().from(usuarios).where(eq(usuarios.id, stored.userId)).limit(1).then((r) => r[0]);
+    if (!user) {
+      await db.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.id, stored.id));
+      res.status(401).json({ error: "Usuario no encontrado" });
+      return;
+    }
+
+    const newAccessToken = jwt.sign(
+      { id: user.id, email: user.email, rol: user.rol },
+      JWT_SECRET,
+      { expiresIn: (process.env.JWT_EXPIRES_IN || "8h") as SignOptions["expiresIn"] },
+    );
+
+    const newRefreshToken = await rotateRefreshToken(
+      stored.id,
+      user.id,
+      stored.deviceType,
+      stored.deviceName || undefined,
+    );
+
+    res.json({ token: newAccessToken, refreshToken: newRefreshToken });
+  } catch (err) {
+    console.error("Refresh error:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// POST /api/auth/logout
+router.post("/logout", async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) { res.status(400).json({ error: "Refresh token requerido" }); return; }
+
+    const hash = crypto.createHash("sha256").update(refreshToken).digest("hex");
+    await db.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.tokenHash, hash));
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Logout error:", err);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 });

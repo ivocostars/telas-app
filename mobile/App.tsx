@@ -5,7 +5,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { COLORS } from './src/config';
-import { getToken } from './src/services/storage';
+import { getToken, saveToken, getRefreshToken, saveRefreshToken, removeToken, removeRefreshToken } from './src/services/storage';
+import { API_URL } from './src/config';
 import { useAppStore } from './src/store';
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -43,12 +44,56 @@ export default function App() {
 
   async function initAuth() {
     try {
-      const storedToken = await getToken();
+      let storedToken = await getToken();
+      const storedRefresh = await getRefreshToken();
+
+      if (storedToken && storedRefresh) {
+        const expired = isTokenExpired(storedToken);
+        if (expired) {
+          const newToken = await tryRefresh(storedRefresh);
+          if (newToken) {
+            storedToken = newToken;
+          } else {
+            storedToken = null;
+          }
+        }
+      }
+
       if (storedToken) {
         setToken(storedToken);
       }
     } catch {} finally {
       setInitializing(false);
+    }
+  }
+
+  function isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 < Date.now();
+    } catch {
+      return true;
+    }
+  }
+
+  async function tryRefresh(refreshToken: string): Promise<string | null> {
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) {
+        await removeToken();
+        await removeRefreshToken();
+        return null;
+      }
+      const data = await res.json();
+      await saveToken(data.token);
+      await saveRefreshToken(data.refreshToken);
+      return data.token;
+    } catch {
+      return null;
     }
   }
 

@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 
 const TOKEN_KEY = 'auth_token';
+const REFRESH_TOKEN_KEY = 'auth_refresh_token';
 const SCANNER_NAME_KEY = 'scanner_name';
 const SERVER_URL_KEY = 'server_url';
 const CONFIG_FILE = `${FileSystem.documentDirectory}app-config.json`;
@@ -40,6 +41,24 @@ export async function getToken(): Promise<string | null> {
 
 export async function removeToken(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
+}
+
+// --- Refresh Token (SecureStore) ---
+
+export async function saveRefreshToken(token: string): Promise<void> {
+  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
+}
+
+export async function getRefreshToken(): Promise<string | null> {
+  try {
+    return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function removeRefreshToken(): Promise<void> {
+  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
 }
 
 // --- Scanner Name (AsyncStorage + file backup) ---

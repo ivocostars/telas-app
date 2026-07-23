@@ -26,6 +26,61 @@ export function Layout() {
   const [newRol, setNewRol] = useState<'admin' | 'scanner'>('scanner')
   const [creating, setCreating] = useState(false)
 
+  const [showApkLink, setShowApkLink] = useState(false)
+  const [apkLink, setApkLink] = useState('')
+  const [generatingLink, setGeneratingLink] = useState(false)
+
+  const [showEvent, setShowEvent] = useState(false)
+  const [eventDate, setEventDate] = useState('')
+  const [eventAddress, setEventAddress] = useState('')
+  const [savingEvent, setSavingEvent] = useState(false)
+
+  const openEventConfig = async () => {
+    setShowEvent(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/event-config', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.eventDate) {
+        const d = new Date(data.eventDate)
+        const pad = (n: number) => String(n).padStart(2, '0')
+        setEventDate(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`)
+      }
+      setEventAddress(data.eventAddress || '')
+    } catch {
+      setEventDate('')
+      setEventAddress('')
+    }
+  }
+
+  const handleSaveEvent = async () => {
+    setSavingEvent(true)
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/event-config', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventDate: eventDate ? new Date(eventDate).toISOString() : null,
+          eventAddress: eventAddress || null,
+        }),
+      })
+      if (res.ok) {
+        addToast('Evento actualizado', 'success')
+        setShowEvent(false)
+      } else {
+        const data = await res.json()
+        addToast(data.error || 'Error al guardar', 'error')
+      }
+    } catch {
+      addToast('Error de conexión', 'error')
+    } finally {
+      setSavingEvent(false)
+    }
+  }
+
   const handleLogout = () => {
     localStorage.removeItem('token')
     navigate('/login')
@@ -105,6 +160,31 @@ export function Layout() {
           <button className="nav-link" onClick={() => { setSidebarOpen(false); openUsers() }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>
             <span className="nav-icon">🔐</span>
             Usuarios
+          </button>
+          <button className="nav-link" onClick={() => { setSidebarOpen(false); openEventConfig() }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <span className="nav-icon">📅</span>
+            Evento
+          </button>
+          <button className="nav-link" onClick={async () => {
+            setSidebarOpen(false)
+            setGeneratingLink(true)
+            setShowApkLink(true)
+            try {
+              const token = localStorage.getItem('token')
+              const res = await fetch('/api/apk/token', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              })
+              const data = await res.json()
+              setApkLink(data.link || 'Error al generar link')
+            } catch {
+              setApkLink('Error al generar link')
+            } finally {
+              setGeneratingLink(false)
+            }
+          }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <span className="nav-icon">📲</span>
+            Compartir App
           </button>
         </nav>
         <div className="sidebar-footer">
@@ -191,6 +271,64 @@ export function Layout() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal link de descarga */}
+      <Modal open={showApkLink} onClose={() => setShowApkLink(false)} title="Compartir App">
+        <div className="form">
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 12 }}>
+            Compartí este link para que los usuarios descarguen la app. Válido por 30 días.
+          </p>
+          {generatingLink ? (
+            <p style={{ textAlign: 'center', color: 'var(--color-text-light)' }}>Generando link...</p>
+          ) : apkLink ? (
+            <>
+              <div style={{
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                padding: 12,
+                fontSize: '0.8rem',
+                wordBreak: 'break-all',
+                color: 'var(--color-text)',
+                marginBottom: 12,
+              }}>
+                {apkLink}
+              </div>
+              <div className="form-actions">
+                <button className="btn btn-outline" onClick={() => setShowApkLink(false)}>Cerrar</button>
+                <button className="btn btn-primary" onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(apkLink)
+                    addToast('Link copiado al portapapeles', 'success')
+                  } catch {
+                    addToast('No se pudo copiar', 'error')
+                  }
+                }}>Copiar link</button>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </Modal>
+
+      {/* Modal evento */}
+      <Modal open={showEvent} onClose={() => setShowEvent(false)} title="Configuración del Evento">
+        <div className="form">
+          <div className="form-group">
+            <label className="form-label">Fecha y hora del evento</label>
+            <input type="datetime-local" className="form-input" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Dirección</label>
+            <input type="text" className="form-input" value={eventAddress} onChange={(e) => setEventAddress(e.target.value)} placeholder="Ej: Teatro Colón, CABA" />
+          </div>
+          <div className="form-actions">
+            <button className="btn btn-outline" onClick={() => setShowEvent(false)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={handleSaveEvent} disabled={savingEvent}>
+              {savingEvent ? 'Guardando...' : 'Guardar'}
+            </button>
           </div>
         </div>
       </Modal>

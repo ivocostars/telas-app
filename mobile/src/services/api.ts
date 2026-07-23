@@ -1,5 +1,12 @@
 import { API_URL } from '../config';
-import { getToken } from './storage';
+import {
+  getToken,
+  saveToken,
+  getRefreshToken,
+  saveRefreshToken,
+  removeToken,
+  removeRefreshToken,
+} from './storage';
 
 class ApiRequestError extends Error {
   status: number;
@@ -8,6 +15,42 @@ class ApiRequestError extends Error {
     this.status = status;
     this.name = 'ApiRequestError';
   }
+}
+
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
+
+function processQueue(error: unknown, token: string | null = null) {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token!);
+  });
+  failedQueue = [];
+}
+
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = await getRefreshToken();
+  if (!refreshToken) throw new Error('No hay sesión guardada');
+
+  const response = await fetch(`${API_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!response.ok) {
+    await removeToken();
+    await removeRefreshToken();
+    throw new Error('Sesión expirada');
+  }
+
+  const data = await response.json();
+  await saveToken(data.token);
+  await saveRefreshToken(data.refreshToken);
+  return data.token;
 }
 
 async function apiFetch<T>(
@@ -26,10 +69,40 @@ async function apiFetch<T>(
 
   const url = `${API_URL}${endpoint}`;
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     ...options,
     headers,
   });
+
+  if (response.status === 401) {
+    const storedRefresh = await getRefreshToken();
+
+    if (!storedRefresh) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new ApiRequestError(errorData.error || 'Sesión expirada', 401);
+    }
+
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        const newToken = await refreshAccessToken();
+        processQueue(null, newToken);
+        isRefreshing = false;
+        headers['Authorization'] = `Bearer ${newToken}`;
+        response = await fetch(url, { ...options, headers });
+      } catch (error) {
+        processQueue(error, null);
+        isRefreshing = false;
+        throw new ApiRequestError('Sesión expirada', 401);
+      }
+    } else {
+      const newToken = await new Promise<string>((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      });
+      headers['Authorization'] = `Bearer ${newToken}`;
+      response = await fetch(url, { ...options, headers });
+    }
+  }
 
   if (response.status === 401) {
     throw new ApiRequestError('Sesión expirada', 401);
@@ -49,13 +122,14 @@ async function apiFetch<T>(
 
 export interface LoginResponse {
   token: string;
+  refreshToken: string;
   user: { id: number; email: string; rol: string };
 }
 
 export function login(email: string, password: string): Promise<LoginResponse> {
   return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, deviceType: 'mobile' }),
   });
 }
 
@@ -199,7 +273,16 @@ export function sendEmail(id: number): Promise<SendEmailResponse> {
 }
 
 export function getQrImageUrl(id: number): string {
-  return ''; // Dynamic, use testConnection for full URL
+  return '';
+}
+
+export interface EventConfig {
+  eventDate?: string | null;
+  eventAddress?: string | null;
+}
+
+export function getEventConfig(): Promise<EventConfig> {
+  return apiFetch<EventConfig>('/event-config');
 }
 
 export { ApiRequestError };

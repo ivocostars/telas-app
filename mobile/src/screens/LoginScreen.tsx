@@ -16,7 +16,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS, API_URL } from '../config';
 import { login } from '../services/api';
-import { saveToken } from '../services/storage';
+import { saveToken, saveRefreshToken } from '../services/storage';
 import { useAppStore } from '../store';
 import { RootStackParamList } from '../types';
 
@@ -85,6 +85,7 @@ export default function LoginScreen({ navigation }: Props) {
         return;
       }
       await saveToken(res.token);
+      await saveRefreshToken(res.refreshToken);
       setToken(res.token);
       navigation.replace('Home');
     } catch (e: any) {
@@ -109,6 +110,7 @@ export default function LoginScreen({ navigation }: Props) {
       if (data.ok) {
         const loginRes = await login(changeEmail, changeNewPw);
         await saveToken(loginRes.token);
+        await saveRefreshToken(loginRes.refreshToken);
         setToken(loginRes.token);
         navigation.replace('Home');
       } else {
