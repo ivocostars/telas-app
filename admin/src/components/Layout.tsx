@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Modal } from './Modal'
 import { useToast } from './Toast'
 import { changePassword, getUsuarios, createUsuario, deleteUsuario } from '../services/api'
+import QRCode from 'qrcode'
 
 function validatePass(pw: string): string | null {
   if (pw.length < 8) return 'Mínimo 8 caracteres'
@@ -28,6 +29,7 @@ export function Layout() {
 
   const [showApkLink, setShowApkLink] = useState(false)
   const [apkLink, setApkLink] = useState('')
+  const [apkQr, setApkQr] = useState('')
   const [generatingLink, setGeneratingLink] = useState(false)
 
   const [showEvent, setShowEvent] = useState(false)
@@ -176,9 +178,16 @@ export function Layout() {
                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
               })
               const data = await res.json()
-              setApkLink(data.link || 'Error al generar link')
+              if (data.link) {
+                setApkLink(data.link)
+                setApkQr(await QRCode.toDataURL(data.link, { width: 200, margin: 2 }))
+              } else {
+                setApkLink('Error al generar link')
+                setApkQr('')
+              }
             } catch {
               setApkLink('Error al generar link')
+              setApkQr('')
             } finally {
               setGeneratingLink(false)
             }
@@ -279,12 +288,17 @@ export function Layout() {
       <Modal open={showApkLink} onClose={() => setShowApkLink(false)} title="Compartir App">
         <div className="form">
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 12 }}>
-            Compartí este link para que los usuarios descarguen la app. Válido por 30 días.
+            Compartí este código QR o el link para descargar la app. Válido por 24 horas.
           </p>
           {generatingLink ? (
             <p style={{ textAlign: 'center', color: 'var(--color-text-light)' }}>Generando link...</p>
           ) : apkLink ? (
             <>
+              {apkQr && (
+                <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                  <img src={apkQr} alt="QR de descarga" style={{ borderRadius: 8, border: '1px solid var(--color-border)' }} />
+                </div>
+              )}
               <div style={{
                 background: 'var(--color-bg)',
                 border: '1px solid var(--color-border)',

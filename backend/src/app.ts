@@ -97,13 +97,14 @@ app.get("/api/apk/download", async (req, res) => {
 app.post("/api/apk/token", authenticate, requireAdmin, async (req, res) => {
   const downloadToken = jwt.sign(
     { email: req.user!.email, purpose: "apk_download" },
-    JWT_SECRET,
-    { expiresIn: "30d" },
+    process.env.JWT_SECRET as string,
+    { expiresIn: "24h" }
   );
 
   const apiUrl = process.env.API_URL || `https://${req.hostname}`;
   const link = `${apiUrl}/api/apk/download?token=${encodeURIComponent(downloadToken)}`;
-  res.json({ link, expiresIn: "30d" });
+
+  res.json({ link, expiresIn: "24h" });
 });
 
 // GET /api/apk/version - versión actual del APK
