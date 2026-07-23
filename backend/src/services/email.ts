@@ -47,9 +47,8 @@ export async function sendQrEmail(
     ? `<p><strong>Silla reservada:</strong> Sí</p>`
     : "";
 
-  const googleMapsUrl = eventAddress 
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventAddress)}` 
-    : "#";
+  const finalAddress = eventAddress || 'Palmar 7035 - Club Liniers';
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalAddress)}`;
 
   let mapAttachment = null;
   const mapPath = path.join(process.cwd(), "assets", "map.jpg");
@@ -61,7 +60,7 @@ export async function sendQrEmail(
     };
   }
 
-  const mapHtml = (eventAddress && mapAttachment)
+  const mapHtml = mapAttachment
     ? `
       <div style="margin: 24px 0; text-align: center;">
         <p><strong>Ubicación en el mapa:</strong></p>
@@ -95,7 +94,7 @@ BEGIN:VEVENT
 DTSTART:20260808T233000Z
 DTEND:20260809T023000Z
 SUMMARY:Acrobacia en Telas
-LOCATION:${eventAddress || 'Palmar 7035 - Club Liniers'}
+LOCATION:${finalAddress}
 DESCRIPTION:Evento de exhibición de acrobacia en telas
 END:VEVENT
 END:VCALENDAR`;
@@ -126,7 +125,7 @@ END:VCALENDAR`;
     <div class="event-info">
       <h2 style="color: #1a1a2e; font-size: 18px; margin: 16px 0 8px;">📅 Datos del evento</h2>
       <p><strong>Fecha:</strong> ${formattedDate}</p>
-      <p><strong>Dirección:</strong> ${eventAddress || 'Palmar 7035 - Club Liniers'}</p>
+      <p><strong>Dirección:</strong> ${finalAddress}</p>
     </div>
 
     <div class="detail">
