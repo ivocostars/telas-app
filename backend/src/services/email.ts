@@ -113,7 +113,7 @@ END:VCALENDAR`;
     .detail p { margin: 4px 0; color: #fff; }
     .event-info { background: #0b0c10; padding: 12px 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #ff00ff; }
     .event-info p { margin: 4px 0; color: #fff; }
-    .qr-wrapper { text-align: center; margin: 24px 0; padding: 20px; background: linear-gradient(45deg, #ff00ff, #00ffff); border-radius: 12px; }
+    .qr-wrapper { text-align: center; margin: 24px 0; padding: 20px; border-radius: 12px; }
     .qr-wrapper img { border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #45a29e; font-size: 12px; color: #66fcf1; text-align: center; }
   </style>
@@ -132,10 +132,12 @@ END:VCALENDAR`;
       <p><strong>Dirección:</strong> ${finalAddress}</p>
     </div>
 
+    ${(alumnaHtml || sillaHtml) ? `
     <div class="detail">
       ${alumnaHtml}
       ${sillaHtml}
     </div>
+    ` : ''}
     <div class="qr-wrapper">
       <img src="cid:qr" alt="QR de ingreso" style="width: 300px; height: 300px;" />
     </div>
