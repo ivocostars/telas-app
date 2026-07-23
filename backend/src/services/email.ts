@@ -40,7 +40,7 @@ export async function sendQrEmail(
   });
 
   const alumnaHtml = alumnaInvitada
-    ? `<p><strong>Va a ver a:</strong> ${alumnaInvitada}</p>`
+    ? `<p><strong>Vas a ver a:</strong> ${alumnaInvitada}</p>`
     : "";
 
   const sillaHtml = silla
