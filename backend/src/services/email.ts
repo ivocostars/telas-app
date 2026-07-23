@@ -56,7 +56,8 @@ export async function sendQrEmail(
     mapAttachment = {
       filename: "map.jpg",
       path: mapPath,
-      cid: "map"
+      cid: "map@telasapp",
+      contentDisposition: "inline"
     };
   }
 
@@ -65,7 +66,7 @@ export async function sendQrEmail(
       <div style="margin: 24px 0; text-align: center;">
         <p><strong>Ubicación en el mapa:</strong></p>
         <a href="${googleMapsUrl}" target="_blank">
-          <img src="cid:map" alt="Ubicación en el mapa" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; border: 1px solid #ddd;" />
+          <img src="cid:map@telasapp" alt="Ubicación en el mapa" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; border: 1px solid #ddd;" />
         </a>
         <p style="font-size: 12px; margin-top: 8px;"><a href="${googleMapsUrl}" target="_blank" style="color: #6C3CB5;">Abrir en Google Maps</a></p>
       </div>
@@ -139,7 +140,7 @@ END:VCALENDAR`;
     </div>
     ` : ''}
     <div class="qr-wrapper">
-      <img src="cid:qr" alt="QR de ingreso" style="width: 300px; height: 300px;" />
+      <img src="cid:qr@telasapp" alt="QR de ingreso" style="width: 300px; height: 300px;" />
     </div>
     ${mapHtml}
     <p style="text-align: center;">Guardá este correo o mostrá el QR desde tu teléfono el día del evento.</p>
@@ -160,7 +161,8 @@ END:VCALENDAR`;
         filename: "qr.png",
         content: qrBuffer,
         contentType: "image/png",
-        cid: "qr",
+        cid: "qr@telasapp",
+        contentDisposition: "inline",
       },
       {
         filename: "evento.ics",
