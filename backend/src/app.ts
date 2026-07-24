@@ -112,8 +112,8 @@ app.post("/api/apk/token", authenticate, requireAdmin, async (req, res) => {
 // GET /api/apk/version - versión actual del APK
 app.get("/api/apk/version", (req, res) => {
   res.json({
-    version: "1.1.0",
-    versionCode: 3,
+    version: "1.2.0",
+    versionCode: 4,
     apkUrl: `${process.env.API_URL || `https://${req.hostname}`}/api/apk/download`,
   });
 });

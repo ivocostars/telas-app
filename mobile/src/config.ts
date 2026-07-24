@@ -1,14 +1,14 @@
 export const API_URL = 'https://telas.costarojas.com/api';
 
 export const COLORS = {
-  bg: '#0D0A1A',
-  bgCard: '#1A1530',
-  primary: '#6C3CB5',
-  primaryLight: '#8B5CF6',
-  accent: '#D4A847',
-  success: '#22C55E',
-  error: '#EF4444',
+  bg: '#120B29',         // Deep purple background
+  bgCard: '#2A1B54',     // Indigo cards
+  primary: '#FF107A',    // Neon Pink
+  primaryLight: '#00F0FF', // Neon Cyan
+  accent: '#FFD700',     // Gold
+  success: '#39FF14',    // Neon Green
+  error: '#FF003C',      // Neon Red
   text: '#F8F8FF',
-  textMuted: '#9CA3AF',
-  border: '#2D2A4A',
+  textMuted: '#B8A5D6',  // Light purple muted
+  border: '#4D2C91',     // Vibrant border
 } as const;

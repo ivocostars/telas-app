@@ -181,6 +181,22 @@ export function createEspectador(
   });
 }
 
+export function updateEspectador(
+  id: number,
+  data: Partial<CreateEspectadorData>
+): Promise<CreateEspectadorResponse> {
+  return apiFetch<CreateEspectadorResponse>(`/espectadores/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteEspectador(id: number): Promise<{ deleted: boolean }> {
+  return apiFetch<{ deleted: boolean }>(`/espectadores/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export interface EspectadorData {
   nombreCompleto: string;
   silla: boolean;

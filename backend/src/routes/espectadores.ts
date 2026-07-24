@@ -165,6 +165,22 @@ router.post("/", authenticate, requireAdmin, async (req: Request, res: Response)
       .update(crypto.randomUUID() + Date.now())
       .digest("hex");
 
+    // Verificar si es el día del evento
+    let esDiaDelEvento = false;
+    const conf = await db.select().from(eventConfig).limit(1);
+    if (conf.length > 0 && conf[0].eventDate) {
+      const hoy = new Date();
+      // Ajustamos ambas fechas a su inicio del día local para comparar correctamente
+      const eventDate = new Date(conf[0].eventDate);
+      if (
+        hoy.getDate() === eventDate.getDate() &&
+        hoy.getMonth() === eventDate.getMonth() &&
+        hoy.getFullYear() === eventDate.getFullYear()
+      ) {
+        esDiaDelEvento = true;
+      }
+    }
+
     const inserted = await db
       .insert(espectadores)
       .values({
@@ -173,7 +189,7 @@ router.post("/", authenticate, requireAdmin, async (req: Request, res: Response)
         telefono: body.telefono ?? null,
         silla: body.silla ?? false,
         alumnaInvitada: body.alumnaInvitada || null,
-        vendidoEnPuerta: body.vendidoEnPuerta ?? false,
+        vendidoEnPuerta: esDiaDelEvento,
         qrHash,
       })
       .returning();
@@ -206,9 +222,32 @@ router.put("/:id", authenticate, requireAdmin, async (req: Request, res: Respons
       return;
     }
 
+    const existing = await db
+      .select()
+      .from(espectadores)
+      .where(eq(espectadores.id, id));
+
+    if (!existing[0]) {
+      res.status(404).json({ error: "Espectador no encontrado" });
+      return;
+    }
+
+    const current = existing[0];
+    let newQrHash = undefined;
+
+    if (
+      (body.nombreCompleto !== undefined && body.nombreCompleto !== current.nombreCompleto) ||
+      (body.alumnaInvitada !== undefined && body.alumnaInvitada !== current.alumnaInvitada)
+    ) {
+      newQrHash = crypto
+        .createHash("sha256")
+        .update(crypto.randomUUID() + Date.now())
+        .digest("hex");
+    }
+
     const updated = await db
       .update(espectadores)
-      .set(body)
+      .set({ ...body, ...(newQrHash ? { qrHash: newQrHash } : {}) })
       .where(eq(espectadores.id, id))
       .returning();
 

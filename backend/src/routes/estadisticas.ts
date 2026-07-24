@@ -40,6 +40,7 @@ router.get("/", authenticate, async (_req: Request, res: Response) => {
       .orderBy(desc(escaneos.creadoEn))
       .limit(10);
 
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
     res.json({
       total,
       ingresados,

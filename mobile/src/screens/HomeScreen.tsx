@@ -183,8 +183,8 @@ export default function HomeScreen({ navigation }: Props) {
           ]}
         />
         <View style={styles.headerContent}>
-          <Text style={styles.appName}>Telas Scanner</Text>
-          <Text style={styles.headerSub}>Control de Ingresos</Text>
+          <Text style={styles.appName}>Muestra invernal</Text>
+          <Text style={styles.headerSub}>🪩 de tela y aro ✨</Text>
         </View>
       </View>
 
@@ -226,7 +226,7 @@ export default function HomeScreen({ navigation }: Props) {
         <TouchableOpacity onPress={handleUpdate}>
           <Text style={styles.updateText}>📲 Instalar última versión</Text>
         </TouchableOpacity>
-        <Text style={styles.version}>v1.1.0</Text>
+        <Text style={styles.version}>v1.2.0</Text>
       </View>
 
       <Modal
@@ -296,17 +296,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   appName: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: COLORS.accent,
-    letterSpacing: 1,
+    fontSize: 32,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    color: COLORS.primaryLight,
+    letterSpacing: 2,
+    textShadowColor: COLORS.primary,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 15,
   },
   headerSub: {
     fontSize: 13,
-    color: COLORS.textMuted,
+    color: '#FFF',
     letterSpacing: 2,
     textTransform: 'uppercase',
     marginTop: 4,
+    textShadowColor: COLORS.primaryLight,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   cardsContainer: {
     flex: 1,
@@ -345,10 +352,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: 19,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '900',
+    fontStyle: 'italic',
     color: COLORS.text,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    textShadowColor: COLORS.primary,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
   },
   cardDescription: {
     fontSize: 13,

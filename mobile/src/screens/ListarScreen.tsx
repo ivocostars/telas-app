@@ -12,6 +12,8 @@ import {
   Alert,
   Linking,
   Platform,
+  Switch,
+  ScrollView,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import ViewShot from 'react-native-view-shot';
@@ -19,7 +21,7 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS } from '../config';
-import { getEspectadores, sendEmail, type EspectadorListado } from '../services/api';
+import { getEspectadores, sendEmail, updateEspectador, deleteEspectador, type EspectadorListado, type CreateEspectadorData } from '../services/api';
 import { RootStackParamList } from '../types';
 
 type ListarScreenNavigationProp = NativeStackNavigationProp<
@@ -42,6 +44,10 @@ export default function ListarScreen({ navigation }: Props) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<EspectadorListado | null>(null);
   const [qrModal, setQrModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<CreateEspectadorData>>({});
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [sending, setSending] = useState(false);
   const shotRef = useRef<any>(null);
 
@@ -83,6 +89,64 @@ export default function ListarScreen({ navigation }: Props) {
   function openQr(s: EspectadorListado) {
     setSelected(s);
     setQrModal(true);
+  }
+
+  function openEdit(s: EspectadorListado) {
+    setSelected(s);
+    setEditForm({
+      email: s.email || '',
+      telefono: s.telefono || '',
+      silla: s.silla,
+    });
+    setEditModal(true);
+  }
+
+  async function handleSaveEdit() {
+    if (!selected) return;
+    Alert.alert(
+      'Advertencia',
+      '¿Estás seguro que querés modificar los datos de este espectador?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Grabar', style: 'destructive', onPress: async () => {
+            setSaving(true);
+            try {
+              await updateEspectador(selected.id, editForm);
+              Alert.alert('Éxito', 'Espectador modificado');
+              setEditModal(false);
+              fetchData(1, true);
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'No se pudo guardar');
+            } finally {
+              setSaving(false);
+            }
+        }},
+      ]
+    );
+  }
+
+  async function handleDeleteEspectador() {
+    if (!selected) return;
+    Alert.alert(
+      'ELIMINAR ESPECTADOR',
+      `¿Eliminar a ${selected.nombreCompleto}? Esta acción no se puede deshacer.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'ELIMINAR', style: 'destructive', onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteEspectador(selected.id);
+              Alert.alert('Éxito', 'Espectador eliminado');
+              setEditModal(false);
+              fetchData(1, true);
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'No se pudo eliminar');
+            } finally {
+              setDeleting(false);
+            }
+        }},
+      ]
+    );
   }
 
   async function handleEmail() {
@@ -152,6 +216,7 @@ export default function ListarScreen({ navigation }: Props) {
       <TouchableOpacity
         style={styles.row}
         onPress={() => openQr(item)}
+        onLongPress={() => openEdit(item)}
         activeOpacity={0.7}
       >
         <View style={styles.rowInfo}>
@@ -344,6 +409,57 @@ export default function ListarScreen({ navigation }: Props) {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={editModal} transparent animationType="fade" onRequestClose={() => setEditModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { padding: 20 }]}>
+            <ScrollView style={{ width: '100%', maxHeight: 400 }}>
+              <Text style={styles.modalName}>{selected?.nombreCompleto}</Text>
+              {selected?.alumnaInvitada ? (
+                <Text style={styles.modalAlumna}>🎓 {selected.alumnaInvitada}</Text>
+              ) : null}
+
+              <Text style={{ color: COLORS.textMuted, marginTop: 20 }}>Email</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.email}
+                onChangeText={t => setEditForm({...editForm, email: t})}
+                keyboardType="email-address"
+              />
+
+              <Text style={{ color: COLORS.textMuted, marginTop: 10 }}>Teléfono</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.telefono}
+                onChangeText={t => setEditForm({...editForm, telefono: t})}
+                keyboardType="phone-pad"
+              />
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 15, paddingBottom: 15 }}>
+                <Text style={{ color: COLORS.textMuted }}>Silla Reservada</Text>
+                <Switch
+                  value={editForm.silla ?? false}
+                  onValueChange={v => setEditForm({...editForm, silla: v})}
+                  trackColor={{ false: COLORS.border, true: COLORS.primary }}
+                  thumbColor={editForm.silla ? COLORS.primaryLight : COLORS.textMuted}
+                />
+              </View>
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={[styles.modalActionBtn, { backgroundColor: COLORS.bg, flex: 1 }]} onPress={() => setEditModal(false)}>
+                <Text style={styles.modalActionText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalActionBtn, { backgroundColor: COLORS.error, flex: 0.5 }]} onPress={handleDeleteEspectador} disabled={deleting || saving}>
+                <Text style={[styles.modalActionText, { color: '#fff', fontSize: 16 }]}>🗑️</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalActionBtn, { backgroundColor: COLORS.primary, flex: 1.5 }]} onPress={handleSaveEdit} disabled={saving || deleting}>
+                <Text style={[styles.modalActionText, { color: '#000' }]}>{saving ? 'Grabando...' : 'Grabar'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }

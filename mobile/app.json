@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Telas Scanner",
+    "name": "Muestra Invernal de Tela y Aro",
     "slug": "telas-scanner",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./src/theme/icon-1024.png",
     "splash": {
-      "backgroundColor": "#0D0A1A",
+      "backgroundColor": "#120B29",
       "image": "./src/theme/icon.png"
     },
     "ios": {
@@ -18,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0D0A1A"
+        "backgroundColor": "#120B29"
       },
       "package": "com.telas.scanner",
       "permissions": ["android.permission.CAMERA", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.READ_EXTERNAL_STORAGE"],
