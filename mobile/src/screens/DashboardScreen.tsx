@@ -181,9 +181,14 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 30,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.text,
+    fontSize: 26,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    color: COLORS.primaryLight,
+    letterSpacing: 1,
+    textShadowColor: COLORS.primary,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   liveContainer: {
     flexDirection: 'row',
@@ -228,8 +233,12 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 38,
-    fontWeight: '700',
+    fontWeight: '900',
+    fontStyle: 'italic',
     marginTop: 6,
+    textShadowColor: 'rgba(255, 255, 255, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   listContent: {
     paddingBottom: 32,
