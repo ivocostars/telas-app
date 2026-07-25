@@ -2,7 +2,8 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { eq, desc, asc, ilike, count, sql } from "drizzle-orm";
 import crypto from "node:crypto";
-import PDFDocument from "pdfkit";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
 import multer from "multer";
 import * as XLSX from "xlsx";
@@ -539,95 +540,35 @@ router.post("/:id/salida", authenticate, async (req: Request, res: Response) => 
 });
 
 async function generatePdfList(rows: typeof espectadores.$inferSelect[]): Promise<Buffer> {
-  return new Promise<Buffer>((resolve, reject) => {
-    const doc = new PDFDocument({ size: "A4", margin: 20 });
-    const buffers: Buffer[] = [];
-    doc.on("data", (chunk: Buffer) => buffers.push(chunk));
-    doc.on("end", () => resolve(Buffer.concat(buffers)));
-    doc.on("error", reject);
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-    const mm2pt = (mm: number) => mm * 2.835;
-    const margin = mm2pt(20);
-    const pageW = doc.page.width - margin * 2;
+  const tableRows = rows.map((e, i) => [
+    "",
+    String(i + 1),
+    e.nombreCompleto,
+    e.alumnaInvitada || "",
+    e.silla ? "SÍ" : "NO",
+    e.email || "",
+    e.telefono || "",
+  ]);
 
-    const colWidths = [mm2pt(8), mm2pt(22), mm2pt(40), mm2pt(30), mm2pt(12), mm2pt(33), mm2pt(33)];
-    const colX: number[] = [];
-    let x = margin;
-    for (const w of colWidths) {
-      colX.push(x);
-      x += w;
-    }
-
-    const headers = ["", "#", "Nombre completo", "Alumna", "Silla", "Email", "Teléfono"];
-
-    const cellPad = mm2pt(1.5);
-
-    function drawHeader(y: number) {
-      doc.rect(margin, y, pageW, mm2pt(7)).fill("#000000");
-      doc.fill("#ffffff").fontSize(7).font("Helvetica-Bold");
-      for (let i = 0; i < headers.length; i++) {
-        doc.text(headers[i], colX[i] + cellPad, y + cellPad + 1.5, {
-          width: colWidths[i] - cellPad * 2,
-          align: i <= 1 ? "center" : "left",
-        });
-      }
-    }
-
-    function drawRow(y: number, data: string[], index: number) {
-      if (index % 2 === 1) {
-        doc.rect(margin, y, pageW, mm2pt(6)).fill("#f0f0f0");
-      }
-
-      doc.rect(margin, y, pageW, mm2pt(6)).stroke("#000000");
-      doc.fill("#000000").font("Helvetica").fontSize(7);
-      for (let j = 0; j < data.length; j++) {
-        doc.text(data[j], colX[j] + cellPad, y + cellPad, {
-          width: colWidths[j] - cellPad * 2,
-          align: j <= 1 ? "center" : "left",
-        });
-      }
-    }
-
-    const rowH = mm2pt(6);
-    const headerH = mm2pt(7);
-
-    function drawTitle(y: number) {
-      doc.fontSize(10).font("Helvetica").fill("#000000");
-      doc.text("Lista de Invitados - Acrobacia en Telas", margin, y);
-    }
-
-    const titleY = margin;
-    let y = titleY + mm2pt(10);
-    const pageBottom = doc.page.height - margin;
-
-    drawTitle(titleY);
-    drawHeader(y);
-    y += headerH;
-
-    for (let i = 0; i < rows.length; i++) {
-      if (y + rowH > pageBottom) {
-        doc.addPage();
-        y = titleY + mm2pt(10);
-        drawTitle(titleY);
-        drawHeader(y);
-        y += headerH;
-      }
-
-      const e = rows[i];
-      drawRow(y, [
-        "",
-        String(i + 1),
-        e.nombreCompleto,
-        e.alumnaInvitada || "",
-        e.silla ? "SÍ" : "NO",
-        e.email || "",
-        e.telefono || "",
-      ], i);
-      y += rowH;
-    }
-
-    doc.end();
+  autoTable(doc, {
+    head: [["", "#", "Nombre completo", "Alumna", "Silla", "Email", "Teléfono"]],
+    body: tableRows,
+    styles: { fontSize: 7, cellPadding: 1.5, lineColor: [0, 0, 0], lineWidth: 0.1 },
+    headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontSize: 7, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [240, 240, 240] },
+    columnStyles: {
+      0: { halign: "center", cellWidth: 8 },
+    },
+    didDrawPage: (data) => {
+      doc.setFontSize(10);
+      doc.setTextColor(0);
+      doc.text("Lista de Invitados - Acrobacia en Telas", data.settings.margin.left, 10);
+    },
   });
+
+  return Buffer.from(doc.output("arraybuffer"));
 }
 
 // POST /api/espectadores/enviar-reporte
