@@ -58,7 +58,7 @@ export async function sendQrEmail(
       filename: "map.jpg",
       path: mapPath,
       cid: "map@telasapp",
-      contentDisposition: "inline"
+      contentDisposition: "inline" as const,
     };
   }
 
@@ -317,6 +317,59 @@ export async function sendSetupCodeEmail(email: string, code: string, downloadTo
 </body>
 </html>`;
   return trySendEmail(email, "Código de acceso - Acrobacia en Telas", html);
+}
+
+export async function sendReportEmail(
+  to: string,
+  pdfBuffer: Buffer,
+  stats: { total: number; ingresados: number; conSilla: number; fecha: string }
+) {
+  const config = getSmtpConfig();
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.port === 465,
+    auth: { user: config.user, pass: config.pass },
+  });
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>
+body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #0b0c10; color: #fff; margin: 0; padding: 0; }
+.container { max-width: 560px; margin: 0 auto; padding: 24px; background: #1f2833; border-radius: 12px; }
+h1 { color: #ff00ff; font-size: 22px; text-align: center; }
+.stats { background: #0b0c10; border-radius: 8px; padding: 16px; margin: 16px 0; border-left: 4px solid #00ffff; }
+.stats p { margin: 6px 0; color: #c5c6c7; font-size: 15px; }
+.stats strong { color: #fff; }
+.footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #45a29e; font-size: 12px; color: #66fcf1; text-align: center; }
+</style></head>
+<body>
+<div class="container">
+  <h1>📊 Reporte diario de espectadores</h1>
+  <p style="color: #c5c6c7; text-align: center;">${stats.fecha}</p>
+  <div class="stats">
+    <p><strong>Total espectadores:</strong> ${stats.total}</p>
+    <p><strong>Ingresados:</strong> ${stats.ingresados}</p>
+    <p><strong>Con silla reservada:</strong> ${stats.conSilla}</p>
+  </div>
+  <p style="color: #c5c6c7;">Adjunto encontrarás el PDF con la lista completa de espectadores registrados hasta el momento.</p>
+  <div class="footer"><p>Acrobacia en Telas — Sistema de Control de Entradas</p></div>
+</div>
+</body>
+</html>`;
+
+  await transporter.sendMail({
+    from: `"Acrobacia en Telas" <${config.user}>`,
+    to,
+    subject: `📋 Reporte diario - ${stats.fecha}`,
+    html,
+    attachments: [{
+      filename: `espectadores-${stats.fecha.replace(/[/\s,]/g, "-")}.pdf`,
+      content: pdfBuffer,
+      contentType: "application/pdf",
+    }],
+  });
 }
 
 async function trySendEmail(to: string, subject: string, html: string): Promise<boolean> {

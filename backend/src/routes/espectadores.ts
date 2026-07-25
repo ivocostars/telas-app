@@ -2,13 +2,14 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { eq, desc, asc, ilike, count, sql } from "drizzle-orm";
 import crypto from "node:crypto";
+import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import { db } from "../db/index.js";
 import { espectadores, escaneos, eventConfig } from "../db/schema.js";
 import { authenticate, requireAdmin } from "../middleware/auth.js";
-import { sendQrEmail } from "../services/email.js";
+import { sendQrEmail, sendReportEmail } from "../services/email.js";
 
 const router = Router();
 
@@ -534,6 +535,122 @@ router.post("/:id/salida", authenticate, async (req: Request, res: Response) => 
   } catch (err) {
     console.error("Error marking exit:", err);
     res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+function generatePdfList(rows: typeof espectadores.$inferSelect[]): Buffer {
+  const doc = new PDFDocument({ size: "A4", margin: 40 });
+  const buffers: Buffer[] = [];
+  doc.on("data", (chunk) => buffers.push(chunk));
+  doc.on("end", () => {});
+
+  const pageWidth = doc.page.width - 80;
+
+  function drawTable(startY: number) {
+    const colWidths = [20, 200, 120, 32, 100, 100];
+    const colX: number[] = [];
+    let x = 40;
+    for (const w of colWidths) {
+      colX.push(x);
+      x += w;
+    }
+
+    const headers = ["#", "Nombre completo", "Alumna", "Silla", "Email", "Teléfono"];
+
+    doc.roundedRect(40, startY, pageWidth, 20, 3).fill("#1a1a2e");
+    doc.fill("#ffffff").fontSize(8).font("Helvetica-Bold");
+    for (let i = 0; i < headers.length; i++) {
+      doc.text(headers[i], colX[i] + 2, startY + 6, { width: colWidths[i] - 4, align: i === 0 ? "center" : "left" });
+    }
+
+    let y = startY + 22;
+    doc.font("Helvetica").fontSize(7);
+    for (let i = 0; i < rows.length; i++) {
+      if (y > doc.page.height - 50) {
+        doc.addPage();
+        y = 40;
+
+        doc.roundedRect(40, y, pageWidth, 20, 3).fill("#1a1a2e");
+        doc.fill("#ffffff").fontSize(8).font("Helvetica-Bold");
+        for (let j = 0; j < headers.length; j++) {
+          doc.text(headers[j], colX[j] + 2, y + 6, { width: colWidths[j] - 4, align: j === 0 ? "center" : "left" });
+        }
+        y += 22;
+        doc.font("Helvetica").fontSize(7);
+      }
+
+      const e = rows[i];
+      const rowData = [
+        String(i + 1),
+        e.nombreCompleto,
+        e.alumnaInvitada || "",
+        e.silla ? "SÍ" : "NO",
+        e.email || "",
+        e.telefono || "",
+      ];
+
+      if (i % 2 === 1) {
+        doc.rect(40, y - 2, pageWidth, 13).fill("#f0f0f0");
+      }
+
+      doc.fill("#000000");
+      for (let j = 0; j < rowData.length; j++) {
+        doc.text(rowData[j], colX[j] + 2, y, { width: colWidths[j] - 4, align: j === 0 ? "center" : "left" });
+      }
+      y += 13;
+    }
+
+    return y + 20;
+  }
+
+  doc.fontSize(14).font("Helvetica-Bold").fill("#000000").text("Lista de Invitados - Acrobacia en Telas", 40, 20);
+  drawTable(42);
+  doc.end();
+
+  return Buffer.concat(buffers);
+}
+
+// POST /api/espectadores/enviar-reporte
+router.post("/enviar-reporte", async (req: Request, res: Response) => {
+  try {
+    const apiKey = req.headers["x-api-key"] as string;
+    const expectedKey = process.env.REPORT_API_KEY;
+
+    if (apiKey !== expectedKey) {
+      res.status(401).json({ error: "No autorizado" });
+      return;
+    }
+
+    const rows = await db
+      .select()
+      .from(espectadores)
+      .orderBy(
+        sql`${espectadores.alumnaInvitada} ASC NULLS LAST`,
+        asc(espectadores.nombreCompleto)
+      );
+
+    const totalIngresados = rows.filter((r) => r.ingresado).length;
+    const conSilla = rows.filter((r) => r.silla).length;
+
+    const fecha = new Intl.DateTimeFormat("es-AR", {
+      dateStyle: "full",
+      timeStyle: "short",
+      timeZone: "America/Argentina/Buenos_Aires",
+    }).format(new Date());
+
+    const pdfBuffer = generatePdfList(rows);
+
+    await sendReportEmail("ivan.costa.rojas@gmail.com", pdfBuffer, {
+      total: rows.length,
+      ingresados: totalIngresados,
+      conSilla,
+      fecha,
+    });
+
+    res.json({ ok: true, total: rows.length, email: "ivan.costa.rojas@gmail.com" });
+  } catch (err) {
+    console.error("Error enviando reporte:", err);
+    res.status(500).json({ error: "Error al enviar el reporte" });
   }
 });
 
