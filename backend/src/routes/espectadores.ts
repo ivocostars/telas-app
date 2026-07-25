@@ -538,15 +538,16 @@ router.post("/:id/salida", authenticate, async (req: Request, res: Response) => 
   }
 });
 
-function generatePdfList(rows: typeof espectadores.$inferSelect[]): Buffer {
-  const doc = new PDFDocument({ size: "A4", margin: 40 });
-  const buffers: Buffer[] = [];
-  doc.on("data", (chunk) => buffers.push(chunk));
-  doc.on("end", () => {});
+async function generatePdfList(rows: typeof espectadores.$inferSelect[]): Promise<Buffer> {
+  return new Promise<Buffer>((resolve, reject) => {
+    const doc = new PDFDocument({ size: "A4", margin: 40 });
+    const buffers: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => buffers.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", reject);
 
-  const pageWidth = doc.page.width - 80;
+    const pageWidth = doc.page.width - 80;
 
-  function drawTable(startY: number) {
     const colWidths = [20, 200, 120, 32, 100, 100];
     const colX: number[] = [];
     let x = 40;
@@ -557,24 +558,26 @@ function generatePdfList(rows: typeof espectadores.$inferSelect[]): Buffer {
 
     const headers = ["#", "Nombre completo", "Alumna", "Silla", "Email", "Teléfono"];
 
-    doc.roundedRect(40, startY, pageWidth, 20, 3).fill("#1a1a2e");
-    doc.fill("#ffffff").fontSize(8).font("Helvetica-Bold");
-    for (let i = 0; i < headers.length; i++) {
-      doc.text(headers[i], colX[i] + 2, startY + 6, { width: colWidths[i] - 4, align: i === 0 ? "center" : "left" });
+    function drawHeader(y: number) {
+      doc.roundedRect(40, y, pageWidth, 20, 3).fill("#1a1a2e");
+      doc.fill("#ffffff").fontSize(8).font("Helvetica-Bold");
+      for (let i = 0; i < headers.length; i++) {
+        doc.text(headers[i], colX[i] + 2, y + 6, { width: colWidths[i] - 4, align: i === 0 ? "center" : "left" });
+      }
     }
 
-    let y = startY + 22;
+    doc.fontSize(14).font("Helvetica-Bold").fill("#000000").text("Lista de Invitados - Acrobacia en Telas", 40, 20);
+
+    let y = 42;
+    drawHeader(y);
+    y += 22;
     doc.font("Helvetica").fontSize(7);
+
     for (let i = 0; i < rows.length; i++) {
       if (y > doc.page.height - 50) {
         doc.addPage();
         y = 40;
-
-        doc.roundedRect(40, y, pageWidth, 20, 3).fill("#1a1a2e");
-        doc.fill("#ffffff").fontSize(8).font("Helvetica-Bold");
-        for (let j = 0; j < headers.length; j++) {
-          doc.text(headers[j], colX[j] + 2, y + 6, { width: colWidths[j] - 4, align: j === 0 ? "center" : "left" });
-        }
+        drawHeader(y);
         y += 22;
         doc.font("Helvetica").fontSize(7);
       }
@@ -600,14 +603,8 @@ function generatePdfList(rows: typeof espectadores.$inferSelect[]): Buffer {
       y += 13;
     }
 
-    return y + 20;
-  }
-
-  doc.fontSize(14).font("Helvetica-Bold").fill("#000000").text("Lista de Invitados - Acrobacia en Telas", 40, 20);
-  drawTable(42);
-  doc.end();
-
-  return Buffer.concat(buffers);
+    doc.end();
+  });
 }
 
 // POST /api/espectadores/enviar-reporte
@@ -638,7 +635,7 @@ router.post("/enviar-reporte", async (req: Request, res: Response) => {
       timeZone: "America/Argentina/Buenos_Aires",
     }).format(new Date());
 
-    const pdfBuffer = generatePdfList(rows);
+    const pdfBuffer = await generatePdfList(rows);
 
     await sendReportEmail("ivan.costa.rojas@gmail.com", pdfBuffer, {
       total: rows.length,
